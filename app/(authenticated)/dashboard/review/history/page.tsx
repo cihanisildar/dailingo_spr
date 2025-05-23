@@ -1,0 +1,153 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/axios";
+import { Card } from "@/components/ui/card";
+import { format } from "date-fns";
+import { CheckCircle, XCircle, Calendar, TrendingUp } from "lucide-react";
+import { ReviewHistorySkeleton } from "@/components/review/ReviewSkeletons";
+
+interface Review {
+  id: string;
+  word: string;
+  nextReview: string;
+  successCount: number;
+  failureCount: number;
+}
+
+interface ReviewHistory {
+  statistics: {
+    totalReviews: number;
+    totalSuccess: number;
+    totalFailures: number;
+    averageSuccessRate: number;
+  };
+  reviewsByDate: Record<string, Review[]>;
+}
+
+export default function ReviewHistoryPage() {
+  const { data, isLoading } = useQuery<ReviewHistory>({
+    queryKey: ['review-history'],
+    queryFn: async () => {
+      const { data } = await api.get('/cards/history');
+      return data;
+    }
+  });
+
+  if (isLoading) {
+    return <ReviewHistorySkeleton />;
+  }
+
+  const { statistics, reviewsByDate } = data || {};
+
+  return (
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-8 text-white">
+        <h1 className="text-3xl font-bold mb-2">Review History</h1>
+        <p className="text-blue-100">Track your learning progress over time.</p>
+      </div>
+
+      {/* Statistics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Reviews</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {statistics?.totalReviews || 0}
+              </h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-50 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Successful</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {statistics?.totalSuccess || 0}
+              </h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 rounded-lg">
+              <XCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Need Practice</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {statistics?.totalFailures || 0}
+              </h3>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Success Rate</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {Math.round(statistics?.averageSuccessRate || 0)}%
+              </h3>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Review Timeline */}
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold mb-6">Review Timeline</h2>
+        <div className="space-y-6">
+          {Object.entries(reviewsByDate || {}).map(([date, reviews]) => (
+            <div key={date} className="border-l-2 border-indigo-200 pl-4 pb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="h-5 w-5 text-indigo-500" />
+                <h3 className="font-medium text-gray-900">
+                  {format(new Date(date), 'MMMM d, yyyy')}
+                </h3>
+              </div>
+              <div className="grid gap-4">
+                {reviews.map((review: any) => (
+                  <div
+                    key={review.id}
+                    className="bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{review.word}</p>
+                      <p className="text-sm text-gray-500">
+                        Next review: {format(new Date(review.nextReview), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center text-green-600">
+                        <CheckCircle className="h-5 w-5 mr-1" />
+                        <span>{review.successCount}</span>
+                      </div>
+                      <div className="flex items-center text-red-600">
+                        <XCircle className="h-5 w-5 mr-1" />
+                        <span>{review.failureCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+} 

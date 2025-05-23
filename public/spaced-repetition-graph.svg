@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background -->
+    <rect width="800" height="600" fill="#ffffff" fill-opacity="0.05"/>
+    
+    <!-- Grid lines -->
+    <g stroke="#94a3b8" stroke-opacity="0.1" stroke-width="1">
+        <!-- Vertical grid lines -->
+        <line x1="100" y1="50" x2="100" y2="500"/>
+        <line x1="250" y1="50" x2="250" y2="500"/>
+        <line x1="400" y1="50" x2="400" y2="500"/>
+        <line x1="550" y1="50" x2="550" y2="500"/>
+        <line x1="700" y1="50" x2="700" y2="500"/>
+        
+        <!-- Horizontal grid lines -->
+        <line x1="50" y1="100" x2="750" y2="100"/>
+        <line x1="50" y1="200" x2="750" y2="200"/>
+        <line x1="50" y1="300" x2="750" y2="300"/>
+        <line x1="50" y1="400" x2="750" y2="400"/>
+    </g>
+
+    <!-- Axis labels -->
+    <text x="400" y="550" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="14">Time</text>
+    <text x="30" y="275" transform="rotate(-90, 30, 275)" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="14">Memory Retention</text>
+
+    <!-- Memory retention curves -->
+    <!-- First review -->
+    <path d="M100,400 Q175,150 250,380" stroke="#3b82f6" stroke-width="3" fill="none"/>
+    <!-- Second review -->
+    <path d="M250,380 Q350,100 450,350" stroke="#8b5cf6" stroke-width="3" fill="none"/>
+    <!-- Third review -->
+    <path d="M450,350 Q575,75 700,300" stroke="#ec4899" stroke-width="3" fill="none"/>
+
+    <!-- Review points -->
+    <g>
+        <circle cx="100" cy="400" r="6" fill="#3b82f6"/>
+        <circle cx="250" cy="380" r="6" fill="#8b5cf6"/>
+        <circle cx="450" cy="350" r="6" fill="#ec4899"/>
+        <circle cx="700" cy="300" r="6" fill="#f43f5e"/>
+    </g>
+
+    <!-- Gradient overlay -->
+    <defs>
+        <linearGradient id="paint0_linear" x1="400" y1="50" x2="400" y2="500" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#3b82f6" stop-opacity="0.1"/>
+            <stop offset="1" stop-color="#ec4899" stop-opacity="0.1"/>
+        </linearGradient>
+    </defs>
+    <path d="M100,400 Q175,150 250,380 Q350,100 450,350 Q575,75 700,300 L700,500 L100,500 Z" fill="url(#paint0_linear)"/>
+
+    <!-- Decorative elements -->
+    <circle cx="50" cy="50" r="100" fill="url(#paint0_linear)" opacity="0.1"/>
+    <circle cx="750" cy="550" r="100" fill="url(#paint0_linear)" opacity="0.1"/>
+</svg> 
