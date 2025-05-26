@@ -8,12 +8,18 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api') && 
       !request.nextUrl.pathname.startsWith('/api/auth')) {
     
-    const token = await getToken({ req: request });
+    const token = await getToken({ 
+      req: request,
+      // Log token status instead of using debug parameter
+    });
 
+    console.log('Token status:', !!token);
+    
     if (!token) {
+      console.log('Auth failed for path:', request.nextUrl.pathname);
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Unauthorized - No valid token found' },
+        { status: 401 } 
       );
     }
   }
