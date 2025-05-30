@@ -26,6 +26,7 @@ import { AlertCircle, BookOpen, CheckCircle2, Clock, GraduationCap, HelpCircle, 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { toast } from "react-hot-toast";
+import Confetti from 'react-confetti';
 
 interface Word {
   id: string;
@@ -43,12 +44,6 @@ interface TestResult {
   timeSpent: number;
 }
 
-interface TestHistoryResult {
-  word: string;
-  definition: string;
-  isCorrect: boolean;
-  timeSpent: number;
-}
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -93,6 +88,11 @@ export default function TestPage() {
   // Track user responses for flashcards
   const [flashcardResults, setFlashcardResults] = useState<{ id: string; knew: boolean }[]>([]);
   const [showFlashcardSummary, setShowFlashcardSummary] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
 
   useLayoutEffect(() => {
     if (wordRef.current) {
@@ -166,8 +166,8 @@ export default function TestPage() {
       // Invalidate test history cache
       queryClient.invalidateQueries({ queryKey: ["test-history"] });
       toast.success('Test completed successfully!');
-      // Navigate to test history page
-      router.push("/dashboard/test/history");
+      // Stay on the results page, do not navigate
+      // router.push("/dashboard/test/history");
     },
     onError: (error) => {
       console.error('Error saving test session:', error);
@@ -319,6 +319,7 @@ export default function TestPage() {
         } else {
           // Submit the complete test session
           submitTestSession.mutate([...testResults, result]);
+          setShowConfetti(true);
           setShowResults(true);
           setIsTestStarted(false);
         }
@@ -335,6 +336,7 @@ export default function TestPage() {
     setTestResults([]);
     setCurrentWordIndex(0);
     setLastAnswer(null);
+    setShowConfetti(false);
   };
 
   const formatTime = (ms: number) => {
@@ -398,9 +400,31 @@ export default function TestPage() {
 
   const isMobile = useIsMobile();
 
+  // Add window resize handler for confetti
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (showResults) {
     return (
       <div className="max-w-7xl mx-auto space-y-6">
+        {showConfetti && (
+          <Confetti
+            width={windowSize.width}
+            height={windowSize.height}
+            recycle={false}
+            numberOfPieces={500}
+            gravity={0.2}
+          />
+        )}
         <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -950,9 +974,12 @@ export default function TestPage() {
                     onClick={() => {
                       setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: true }]);
                       if (currentWordIndex < words.length - 1) {
-                        setCurrentWordIndex(prev => prev + 1);
                         setIsFlipped(false);
+                        setTimeout(() => {
+                          setCurrentWordIndex(prev => prev + 1);
+                        }, 300);
                       } else {
+                        setShowConfetti(true);
                         setShowFlashcardSummary(true);
                       }
                     }}
@@ -965,9 +992,12 @@ export default function TestPage() {
                     onClick={() => {
                       setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: false }]);
                       if (currentWordIndex < words.length - 1) {
-                        setCurrentWordIndex(prev => prev + 1);
                         setIsFlipped(false);
+                        setTimeout(() => {
+                          setCurrentWordIndex(prev => prev + 1);
+                        }, 300);
                       } else {
+                        setShowConfetti(true);
                         setShowFlashcardSummary(true);
                       }
                     }}
@@ -1056,35 +1086,62 @@ export default function TestPage() {
 
         {/* Flashcard summary after last card */}
         {showFlashcardSummary && (
-          <div className="flex flex-col items-center justify-center mt-8">
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-8 text-center shadow">
-              <h2 className="text-2xl font-bold text-blue-700 mb-2">Session Complete!</h2>
-              <p className="text-lg text-gray-700 mb-4">
-                You knew <span className="font-bold text-green-600">{flashcardResults.filter(r => r.knew).length}</span> out of <span className="font-bold">{words.length}</span> words.
-              </p>
-              <div className="flex flex-col gap-2 mb-4">
-                {words.map((word, idx) => (
-                  <div key={word.id} className="flex items-center gap-2 justify-center">
-                    <span className="font-medium text-gray-900">{word.word}</span>
-                    {flashcardResults[idx]?.knew ? (
-                      <span className="text-green-600">Knew</span>
-                    ) : (
-                      <span className="text-red-600">Didn't Know</span>
-                    )}
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            {showConfetti && (
+              <Confetti
+                width={windowSize.width}
+                height={windowSize.height}
+                recycle={false}
+                numberOfPieces={500}
+                gravity={0.2}
+              />
+            )}
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full mx-4">
+              <div className="text-center space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold text-gray-900">Session Complete! 🎉</h2>
+                  <p className="text-gray-600">Great job completing your flashcard session!</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 p-6 bg-gray-50 rounded-xl">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-green-600">
+                      {flashcardResults.filter(r => r.knew).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Words Known</div>
                   </div>
-                ))}
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-red-600">
+                      {flashcardResults.filter(r => !r.knew).length}
+                    </div>
+                    <div className="text-sm text-gray-600">Words to Review</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-center gap-4">
+                    <Button
+                      onClick={() => {
+                        window.location.reload();
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Start New Session
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsTestStarted(false);
+                        setShowFlashcardSummary(false);
+                        setShowConfetti(false);
+                        router.push('/dashboard/test');
+                      }}
+                    >
+                      Return to Dashboard
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button
-                onClick={() => {
-                  setCurrentWordIndex(0);
-                  setIsFlipped(false);
-                  setFlashcardResults([]);
-                  setShowFlashcardSummary(false);
-                }}
-                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2 rounded-lg shadow"
-              >
-                Restart Session
-              </Button>
             </div>
           </div>
         )}

@@ -235,6 +235,22 @@ export default function WordListPage() {
                 </AlertDialog>
               </>
             )}
+            {/* Copy List Button for public lists not owned by the user */}
+            {list.isPublic && list.userId !== session?.user?.id && !hasUserCopied && (
+              <Button
+                variant="outline"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                onClick={() => copyListMutation.mutate()}
+                disabled={copyListMutation.isPending || hasUserCopied}
+              >
+                {copyListMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2" />
+                )}
+                Copy List
+              </Button>
+            )}
           </div>
         </div>
         {list.description && (
