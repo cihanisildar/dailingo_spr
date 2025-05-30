@@ -17,6 +17,8 @@ import {
 import { BrainCircuit } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
+import dailingo_logo from "../../../public/repeeker.png";
+import Image from "next/image";
 
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +89,7 @@ export default function SignUpPage() {
   return (
     <div className="h-screen flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background gradients */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-100/50 via-pink-50/50 to-white dark:from-purple-900/50 dark:via-slate-900/50 dark:to-slate-900/50 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[#5B7CFA]/20 via-[#6C5DD3]/10 to-white dark:from-[#5B7CFA]/40 dark:via-[#6C5DD3]/20 dark:to-slate-900/50 pointer-events-none" />
       <div className="fixed inset-0 bg-grid-slate-200/50 [mask-image:linear-gradient(0deg,white,transparent)] dark:bg-grid-slate-800/50 pointer-events-none" />
       <div className="fixed inset-0 bg-[url('/noise.png')] opacity-[0.01] mix-blend-overlay pointer-events-none" />
 
@@ -99,9 +101,9 @@ export default function SignUpPage() {
         <CardHeader className="space-y-2 text-center relative pt-6">
           <div className="flex justify-center mb-2">
             <Link href="/" className="flex items-center gap-2">
-              <BrainCircuit className="h-7 w-7 bg-gradient-to-br from-pink-500 to-indigo-500 rounded-lg p-1 text-white" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">
-                Dailingo
+              <Image src={dailingo_logo} alt="logo" width={50} height={50} />
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] bg-clip-text text-transparent">
+                Repeeker
               </span>
             </Link>
           </div>
@@ -192,14 +194,14 @@ export default function SignUpPage() {
                 I agree to the{" "}
                 <Link
                   href="/terms"
-                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 font-medium"
+                  className="text-[#5B7CFA] hover:text-[#6C5DD3] dark:text-[#5B7CFA] dark:hover:text-[#6C5DD3] font-medium"
                 >
                   Terms of Service
                 </Link>{" "}
                 and{" "}
                 <Link
                   href="/privacy"
-                  className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 font-medium"
+                  className="text-[#5B7CFA] hover:text-[#6C5DD3] dark:text-[#5B7CFA] dark:hover:text-[#6C5DD3] font-medium"
                 >
                   Privacy Policy
                 </Link>
@@ -208,7 +210,7 @@ export default function SignUpPage() {
 
             <Button
               type="submit"
-              className="w-full h-10 bg-gradient-to-r from-pink-500 to-indigo-500 hover:from-pink-600 hover:to-indigo-600 text-white mt-2"
+              className="w-full h-10 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white mt-2 shadow-lg shadow-blue-200/40"
               disabled={isLoading}
             >
               Create Account
@@ -259,7 +261,7 @@ export default function SignUpPage() {
             <span>Already have an account? </span>
             <Link
               href="/auth/signin"
-              className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 font-medium"
+              className="text-[#5B7CFA] hover:text-[#6C5DD3] dark:text-[#5B7CFA] dark:hover:text-[#6C5DD3] font-medium"
             >
               Sign in
             </Link>

@@ -11,7 +11,7 @@ const steps = [
     title: "Create your word lists",
     description:
       "Add words, definitions, example sentences, and even images to create comprehensive learning materials.",
-    gradient: "from-blue-500/20 to-purple-500/20",
+    gradient: "from-[#5B7CFA]/20 to-[#6C5DD3]/20",
     icon: "📝",
   },
   {
@@ -19,7 +19,7 @@ const steps = [
     title: "Take your first test",
     description:
       "Start learning with an initial test to establish your baseline knowledge of the words.",
-    gradient: "from-purple-500/20 to-pink-500/20",
+    gradient: "from-[#5B7CFA]/20 to-[#6C5DD3]/20",
     icon: "✍️",
   },
   {
@@ -27,7 +27,7 @@ const steps = [
     title: "Review at optimal intervals",
     description:
       "Our algorithm schedules reviews right before you're likely to forget, strengthening your memory with each session.",
-    gradient: "from-pink-500/20 to-orange-500/20",
+    gradient: "from-[#5B7CFA]/20 to-[#6C5DD3]/20",
     icon: "🔄",
   },
   {
@@ -35,7 +35,7 @@ const steps = [
     title: "Master your vocabulary",
     description:
       "As you review, words move to longer intervals until they're permanently stored in your long-term memory.",
-    gradient: "from-orange-500/20 to-yellow-500/20",
+    gradient: "from-[#5B7CFA]/20 to-[#6C5DD3]/20",
     icon: "🎯",
   },
 ];
@@ -198,8 +198,8 @@ export default function HowItWorks() {
         <div ref={titleRef} className="text-center mb-16">
           <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl mb-4 opacity-0">
             How spaced repetition{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-              works
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3]">
+              works for you
             </span>
           </h2>
           <p className="mx-auto max-w-[700px] text-muted-foreground text-base opacity-0">

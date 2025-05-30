@@ -30,22 +30,17 @@ export async function GET() {
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
 
+    console.log('Fetching today\'s cards for user:', {
+      userId: user.id,
+      todayStart: todayStart.toISOString(),
+      todayEnd: todayEnd.toISOString()
+    });
+
     // Get all active cards
     const cards = await prisma.card.findMany({
       where: {
         userId: user.id,
         reviewStatus: 'ACTIVE',
-        // Only get cards that haven't been reviewed today
-        NOT: {
-          reviews: {
-            some: {
-              createdAt: {
-                gte: todayStart,
-                lt: todayEnd
-              }
-            }
-          }
-        }
       },
       include: {
         wordDetails: true,
@@ -55,62 +50,78 @@ export async function GET() {
             id: true
           }
         },
-        reviews: {
-          where: {
-            createdAt: {
-              gte: todayStart
-            }
-          },
-          select: {
-            id: true,
-            isSuccess: true,
-            createdAt: true
-          }
-        }
+        reviews: true // log all reviews for debug
       },
       orderBy: {
         nextReview: 'asc'
       }
     });
 
-    // Get the review schedule intervals
-    const intervals = user.reviewSchedule?.intervals || [1, 7, 30, 365];
+    // Cards that have been reviewed today
+    const reviewedTodayCards = cards.filter(card =>
+      card.reviews.some(review => {
+        const created = new Date(review.createdAt);
+        return created >= todayStart && created < todayEnd;
+      })
+    );
+
+    // Only get cards that haven't been reviewed today (pending)
+    const pendingCards = cards.filter(card =>
+      !card.reviews.some(review => {
+        const created = new Date(review.createdAt);
+        return created >= todayStart && created < todayEnd;
+      })
+    );
 
     // Filter cards that are due today based on their last review date and review step
-    const todaysCards = cards.filter(card => {
-      const baseDate = card.lastReviewed || card.createdAt;
-      // If reviewStep is -1 or invalid, treat as new card (step 0)
-      const reviewStep = card.reviewStep < 0 ? 0 : card.reviewStep;
-      const nextInterval = intervals[reviewStep];
-      
-      try {
-        const nextReviewDate = addDays(new Date(baseDate), nextInterval);
-        
-        console.log('Card review calculation:', {
+    const todaysCards = pendingCards.filter(card => {
+      // If the card was just added to review (nextReview is today and lastReviewed is null)
+      // OR if it's due for review based on the schedule
+      const isJustAdded = card.nextReview && 
+        startOfDay(new Date(card.nextReview)).getTime() <= todayStart.getTime() && 
+        !card.lastReviewed;
+
+      if (isJustAdded) {
+        console.log('Card was just added to review:', {
           cardId: card.id,
           word: card.word,
-          baseDate: baseDate.toISOString(),
-          reviewStep: reviewStep,
-          nextInterval,
-          nextReviewDate: nextReviewDate.toISOString(),
-          isDueToday: nextReviewDate >= todayStart && nextReviewDate < todayEnd
+          nextReview: card.nextReview,
+          lastReviewed: card.lastReviewed
         });
-
-        return nextReviewDate >= todayStart && nextReviewDate < todayEnd;
-      } catch (error) {
-        console.error('Error calculating review date for card:', card.id, error);
-        // If there's an error, include the card for today's review
         return true;
       }
+
+      // If the card has a next review date and it's today or earlier, include it
+      if (card.nextReview && startOfDay(new Date(card.nextReview)).getTime() <= todayStart.getTime()) {
+        console.log('Card is due for review:', {
+          cardId: card.id,
+          word: card.word,
+          nextReview: card.nextReview,
+          lastReviewed: card.lastReviewed
+        });
+        return true;
+      }
+
+      console.log('Card filtered OUT:', {
+        cardId: card.id,
+        word: card.word,
+        nextReview: card.nextReview,
+        lastReviewed: card.lastReviewed
+      });
+      return false;
     });
 
-    console.log('Found cards:', {
-      totalActive: cards.length,
-      dueToday: todaysCards.length,
-      dateRange: {
-        start: todayStart.toISOString(),
-        end: todayEnd.toISOString()
-      }
+    console.log('Filtered today\'s cards:', {
+      totalCards: todaysCards.length,
+      cardIds: todaysCards.map(c => c.id),
+      cardStatuses: todaysCards.map(c => ({
+        id: c.id,
+        word: c.word,
+        reviewStatus: c.reviewStatus,
+        nextReview: c.nextReview,
+        lastReviewed: c.lastReviewed,
+        reviewStep: c.reviewStep
+      }))
     });
 
     // Group cards by their review step instead of interval
@@ -123,9 +134,21 @@ export async function GET() {
       return acc;
     }, {} as Record<number, typeof todaysCards>);
 
+    // Group reviewed today cards by review step as well
+    const groupedReviewedTodayCards = reviewedTodayCards.reduce((acc, card) => {
+      const reviewStep = card.reviewStep < 0 ? 0 : card.reviewStep;
+      if (!acc[reviewStep]) {
+        acc[reviewStep] = [];
+      }
+      acc[reviewStep].push(card);
+      return acc;
+    }, {} as Record<number, typeof reviewedTodayCards>);
+
     return NextResponse.json({
       cards: groupedCards,
       total: todaysCards.length,
+      reviewedTodayCards: groupedReviewedTodayCards,
+      reviewedTodayTotal: reviewedTodayCards.length,
       schedule: user.reviewSchedule
     });
 

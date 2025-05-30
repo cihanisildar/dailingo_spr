@@ -16,7 +16,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import dailingo_logo from "../../../public/dailingo_logo.png";
+import dailingo_logo from "../../../public/repeeker.png";
 
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +76,7 @@ export default function SignInPage() {
   return (
     <div className="h-screen flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background gradients */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-100/50 via-pink-50/50 to-white dark:from-purple-900/50 dark:via-slate-900/50 dark:to-slate-900/50 pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[#5B7CFA]/20 via-[#6C5DD3]/10 to-white dark:from-[#5B7CFA]/40 dark:via-[#6C5DD3]/20 dark:to-slate-900/50 pointer-events-none" />
       <div className="fixed inset-0 bg-grid-slate-200/50 [mask-image:linear-gradient(0deg,white,transparent)] dark:bg-grid-slate-800/50 pointer-events-none" />
       <div className="fixed inset-0 bg-[url('/noise.png')] opacity-[0.01] mix-blend-overlay pointer-events-none" />
 
@@ -89,8 +89,8 @@ export default function SignInPage() {
           <div className="flex justify-center mb-2">
             <Link href="/" className="flex items-center gap-2">
               <Image src={dailingo_logo} alt="logo" width={50} height={50} />
-              <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">
-                Dailingo
+              <span className="text-2xl font-bold bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] bg-clip-text text-transparent">
+                Repeeker
               </span>
             </Link>
           </div>
@@ -144,7 +144,7 @@ export default function SignInPage() {
 
             <Button
               type="submit"
-              className="w-full h-10 bg-gradient-to-r from-pink-500 to-indigo-500 hover:from-pink-600 hover:to-indigo-600 text-white mt-2"
+              className="w-full h-10 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white mt-2 shadow-lg shadow-blue-200/40"
               disabled={isLoading}
             >
               Sign in with Email
@@ -195,7 +195,7 @@ export default function SignInPage() {
             <span>Don't have an account? </span>
             <Link
               href="/auth/signup"
-              className="text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-500 font-medium"
+              className="text-[#5B7CFA] hover:text-[#6C5DD3] dark:text-[#5B7CFA] dark:hover:text-[#6C5DD3] font-medium"
             >
               Sign up
             </Link>

@@ -1,63 +1,5 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { 
-  ArrowLeft, 
-  MoreVertical, 
-  Edit, 
-  Trash, 
-  Globe, 
-  Lock,
-  Book,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Plus,
-  Search,
-  Bookmark,
-  Copy,
-  Trash2,
-  Edit2,
-  Loader2,
-} from "lucide-react";
-import Link from "next/link";
-import api from "@/lib/axios";
-import { format } from "date-fns";
-import { useState, useMemo, useEffect } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card as CardType } from "@/types/card";
-import { Badge } from "@/components/ui/badge";
-import { cn, generateCardUrl } from "@/lib/utils";
-import { toast } from "react-hot-toast";
-import { useSession } from "next-auth/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,13 +11,51 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import api from "@/lib/axios";
+import { cn, generateCardUrl } from "@/lib/utils";
+import { Card as CardType } from "@/types/card";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  ArrowLeft,
+  Book,
+  Bookmark,
+  CheckCircle,
+  Clock,
+  Edit,
+  Globe,
+  Loader2,
+  Lock,
+  Plus,
+  Search,
+  Trash,
+  XCircle
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 
 export default function WordListPage() {
   const { data: session } = useSession();
@@ -168,167 +148,176 @@ export default function WordListPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <h1 className="text-3xl font-bold text-white truncate">
-                        {list.name}
-                      </h1>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[300px]">
-                      <p className="text-sm">{list.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "text-white border-white/20",
-                    list.isPublic ? "bg-white/10" : "bg-white/5"
-                  )}
-                >
-                  {list.isPublic ? (
-                    <div className="flex items-center gap-1">
-                      <Globe className="w-3 h-3" />
-                      <span>Public</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <Lock className="w-3 h-3" />
-                      <span>Private</span>
-                    </div>
-                  )}
-                </Badge>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {list.userId === session?.user?.id && (
-                <>
-                  <Link href={`/dashboard/lists/${list.id}/edit`}>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit List</span>
-                    </Button>
-                  </Link>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="h-8 w-8 bg-red-500/80 hover:bg-red-600/80"
-                      >
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Delete List</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete List</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this list? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <div className="flex items-center gap-2 mb-4">
-                        <Checkbox
-                          id="deleteCards"
-                          checked={deleteCards}
-                          onCheckedChange={(checked) => setDeleteCards(checked as boolean)}
-                        />
-                        <label htmlFor="deleteCards" className="text-sm text-gray-600">
-                          Also delete all cards in this list
-                        </label>
-                      </div>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDelete}
-                          className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                        >
-                          Delete List
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-4 sm:p-8">
+        <div className="flex items-center justify-between gap-2">
+          {/* Left: List name */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">
+            {list.name}
+          </h1>
+          {/* Right: Badge and Buttons */}
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-white border-white/20 px-2 py-0.5 text-xs font-normal h-5",
+                list.isPublic ? "bg-white/10" : "bg-white/5"
               )}
-            </div>
+            >
+              {list.isPublic ? (
+                <span className="flex items-center gap-1">
+                  <Globe className="w-3 h-3" />
+                  Public
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  Private
+                </span>
+              )}
+            </Badge>
+            {list.userId === session?.user?.id && (
+              <>
+                <AddCardsDialog listId={list.id}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7 min-w-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </AddCardsDialog>
+                <Link href={`/dashboard/lists/${list.id}/edit`}>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7 min-w-0 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-7 w-7 min-w-0 bg-red-500/80 hover:bg-red-600/80"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete List</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this list? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Checkbox
+                        id="deleteCards"
+                        checked={deleteCards}
+                        onCheckedChange={(checked) => setDeleteCards(checked as boolean)}
+                      />
+                      <label htmlFor="deleteCards" className="text-sm text-gray-600">
+                        Also delete all cards in this list
+                      </label>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                      >
+                        Delete List
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
         </div>
+        {list.description && (
+          <p className="text-blue-100 mt-1 text-xs sm:text-base">{list.description}</p>
+        )}
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         {list.cards.map((card: CardType) => {
           const CardContent = (
             <Card className="h-full hover:shadow-lg transition-all group border-transparent hover:border-blue-200">
-              <div className="p-4 sm:p-6 flex flex-col h-full">
-                <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
-                  <h3 className={cn(
-                    "text-base sm:text-lg font-semibold text-gray-900",
-                    list.userId === session?.user?.id && "group-hover:text-blue-600"
-                  )}>
-                    {card.word}
-                  </h3>
-                  {list.userId === session?.user?.id && (
-                    <Badge 
-                      variant={card.reviewStatus === 'COMPLETED' ? 'success' : 'default'}
-                      className={cn(
-                        "capitalize text-xs whitespace-nowrap",
-                        card.reviewStatus === 'ACTIVE' && "bg-blue-100 text-blue-800",
-                        card.reviewStatus === 'PAUSED' && "bg-gray-100 text-gray-800"
-                      )}
-                    >
-                      {card.reviewStatus.toLowerCase()}
-                    </Badge>
-                  )}
+              <div className="p-3 sm:p-6 flex flex-col h-full">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between w-full gap-2 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 group-hover:text-blue-600 truncate">
+                      {card.word}
+                    </h3>
+                    {list.userId === session?.user?.id && (
+                      <Badge
+                        variant={card.reviewStatus === 'COMPLETED' ? 'success' : 'default'}
+                        className={cn(
+                          "capitalize text-xs px-2 py-0.5 h-5",
+                          card.reviewStatus === 'ACTIVE' && "bg-blue-100 text-blue-800",
+                          card.reviewStatus === 'PAUSED' && "bg-gray-100 text-gray-800"
+                        )}
+                      >
+                        {card.reviewStatus.toLowerCase()}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <p className="text-sm sm:text-base text-gray-600 flex-grow line-clamp-3 mb-3 sm:mb-4">
+                <p className="text-sm sm:text-base text-gray-600 flex-grow line-clamp-3 mb-2 sm:mb-4">
                   {card.definition}
                 </p>
                 {list.userId === session?.user?.id ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 text-xs sm:text-sm text-gray-500">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-gray-500">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center text-emerald-600">
-                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <CheckCircle className="w-4 h-4 mr-1" />
                         <span>{card.successCount}</span>
                       </div>
                       <div className="flex items-center text-blue-600">
-                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        <XCircle className="w-4 h-4 mr-1" />
                         <span>{card.failureCount}</span>
                       </div>
                     </div>
                     <div className="flex items-center">
-                      <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                      <Clock className="w-4 h-4 mr-1" />
                       {format(new Date(card.nextReview), 'MMM d, yyyy')}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-end text-xs sm:text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Book className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                      <span>Public card</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                    {card.wordDetails && (
+                      <>
+                        {card.wordDetails.examples?.length > 0 && (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                            {card.wordDetails.examples.length} Examples
+                          </Badge>
+                        )}
+                        {card.wordDetails.synonyms?.length > 0 && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            {card.wordDetails.synonyms.length} Synonyms
+                          </Badge>
+                        )}
+                        {card.wordDetails.antonyms?.length > 0 && (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                            {card.wordDetails.antonyms.length} Antonyms
+                          </Badge>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             </Card>
           );
 
-          return list.userId === session?.user?.id ? (
+          return (
             <Link key={card.id} href={generateCardUrl(card.word, card.id)}>
               {CardContent}
             </Link>
-          ) : (
-            <div key={card.id}>{CardContent}</div>
           );
         })}
       </div>

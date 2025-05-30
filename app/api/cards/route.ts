@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { Prisma } from '@prisma/client';
+import { addDays } from 'date-fns';
 
 export async function GET(request: Request) {
   try {
@@ -93,13 +94,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get first interval from review schedule
+    const intervals = user.reviewSchedule?.intervals || [1, 2, 7, 30, 365];
+    const firstInterval = intervals[0] || 1;
+    const now = new Date();
+
     const card = await prisma.card.create({
       data: {
         word,
         definition,
         userId: user.id,
         wordListId,
-        nextReview: new Date(), // Default to now
+        nextReview: addDays(now, firstInterval), // Set to first interval in the schedule
         wordDetails: {
           create: {
             synonyms: synonyms || [],

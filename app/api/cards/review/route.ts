@@ -29,14 +29,14 @@ export async function POST(request: Request) {
     // Get the review schedule intervals
     const intervals = card.user.reviewSchedule?.intervals || [1, 7, 30, 365];
     
-    // Find the next interval based on the current reviewStep
-    let nextInterval = intervals[card.reviewStep];
-    let newReviewStep = card.reviewStep;
+    // Ensure reviewStep is never below 0
+    let newReviewStep = Math.max(0, card.reviewStep);
+    let nextInterval = intervals[newReviewStep] || intervals[0] || 1;
     
     // If successful, move to next interval. If failed, stay at current interval
     if (isSuccess && newReviewStep < intervals.length - 1) {
       newReviewStep++;
-      nextInterval = intervals[newReviewStep];
+      nextInterval = intervals[newReviewStep] || intervals[intervals.length - 1] || 1;
     }
 
     // Update review statistics

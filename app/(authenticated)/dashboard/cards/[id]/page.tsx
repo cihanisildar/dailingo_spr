@@ -27,6 +27,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 function CardDetailsSkeleton() {
   return (
@@ -78,6 +80,7 @@ export default function CardDetailsPage() {
   const id = params.id.toString().split("-").pop() || "";
   const { data: card, isLoading } = useCard(id);
   const deleteCardMutation = useDeleteCard();
+  const { data: session } = useSession();
 
   const handleDelete = async () => {
     try {
@@ -113,6 +116,31 @@ export default function CardDetailsPage() {
     );
   }
 
+  const isOwner = card.wordList
+    ? session?.user?.email === (card.wordList as any).userEmail
+    : session?.user?.id === card.userId;
+  const isPublic = card.wordList ? !!card.wordList.isPublic : false;
+
+  // If user is not the owner and list is not public, show access denied
+  if (!isOwner && !isPublic) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh]">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+          Access Denied
+        </h2>
+        <p className="text-gray-600 mb-4">
+          You don't have permission to view this card.
+        </p>
+        <Link href="/dashboard/cards">
+          <Button variant="outline" className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Cards
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="">
@@ -137,75 +165,81 @@ export default function CardDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="flex items-center gap-2 mr-2">
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <span
-                          className={cn(
-                            "px-2.5 py-2 rounded-[8px] text-xs font-medium cursor-help",
-                            card.reviewStatus === "ACTIVE"
-                              ? "bg-yellow-50 text-yellow-700"
-                              : card.reviewStatus === "COMPLETED"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-gray-100 text-gray-700"
+                    {isOwner && (
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span
+                            className={cn(
+                              "px-2.5 py-2 rounded-[8px] text-xs font-medium cursor-help",
+                              card.reviewStatus === "ACTIVE"
+                                ? "bg-yellow-50 text-yellow-700"
+                                : card.reviewStatus === "COMPLETED"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-gray-100 text-gray-700"
+                            )}
+                          >
+                            {card.reviewStatus}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          {card.reviewStatus === "ACTIVE" && (
+                            <p>This card is currently in your active review schedule. You'll be prompted to review it at increasing intervals to strengthen your memory.</p>
                           )}
-                        >
-                          {card.reviewStatus}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        {card.reviewStatus === "ACTIVE" && (
-                          <p>This card is currently in your active review schedule. You'll be prompted to review it at increasing intervals to strengthen your memory.</p>
-                        )}
-                        {card.reviewStatus === "COMPLETED" && (
-                          <p>You've completed all review steps for this card. It will remain in your collection but won't appear in regular reviews.</p>
-                        )}
-                        {card.reviewStatus === "PAUSED" && (
-                          <p>Reviews for this card are temporarily paused. You can resume reviewing it at any time.</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
+                          {card.reviewStatus === "COMPLETED" && (
+                            <p>You've completed all review steps for this card. It will remain in your collection but won't appear in regular reviews.</p>
+                          )}
+                          {card.reviewStatus === "PAUSED" && (
+                            <p>Reviews for this card are temporarily paused. You can resume reviewing it at any time.</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
-                  <Link href={`/dashboard/cards/${id}/edit`}>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 border-white/20 bg-white/10 text-white hover:bg-white/20"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit Card</span>
-                    </Button>
-                  </Link>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8 bg-red-500/80 hover:bg-red-600/80"
-                      >
-                        <Trash className="h-4 w-4" />
-                        <span className="sr-only">Delete Card</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete the card "{card?.word}" and remove it from your
-                          review schedule.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleDelete}
-                          className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                  {isOwner && (
+                    <>
+                      <Link href={`/dashboard/cards/${id}/edit`}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 border-white/20 bg-white/10 text-white hover:bg-white/20"
                         >
-                          Delete Card
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit Card</span>
+                        </Button>
+                      </Link>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-8 w-8 bg-red-500/80 hover:bg-red-600/80"
+                          >
+                            <Trash className="h-4 w-4" />
+                            <span className="sr-only">Delete Card</span>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently
+                              delete the card "{card?.word}" and remove it from your
+                              review schedule.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={handleDelete}
+                              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            >
+                              Delete Card
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -312,124 +346,128 @@ export default function CardDetailsPage() {
           </Card>
 
           {/* Review Stats Card */}
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden border border-gray-200 shadow-md bg-white hover:shadow-lg transition-all duration-200">
-              <div className="p-4 sm:p-6 space-y-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-                  Review Statistics
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <p className="text-sm text-gray-500 mb-1">Success Rate</p>
-                    <p className="text-xl font-semibold text-gray-900">
-                      {((card.successCount / (card.successCount + card.failureCount)) * 100 || 0).toFixed(0)}%
-                    </p>
+          {isOwner && (
+            <div className="lg:col-span-2">
+              <Card className="overflow-hidden border border-gray-200 shadow-md bg-white hover:shadow-lg transition-all duration-200">
+                <div className="p-4 sm:p-6 space-y-6">
+                  <h2 className="text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+                    Review Statistics
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                      <p className="text-sm text-gray-500 mb-1">Success Rate</p>
+                      <p className="text-xl font-semibold text-gray-900">
+                        {((card.successCount / (card.successCount + card.failureCount)) * 100 || 0).toFixed(0)}%
+                      </p>
+                    </div>
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+                      <p className="text-sm text-gray-500 mb-1">Reviews</p>
+                      <p className="text-xl font-semibold text-gray-900">
+                        {card.successCount + card.failureCount}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
+                      <p className="text-sm text-gray-500 mb-1">Views</p>
+                      <p className="text-xl font-semibold text-gray-900">
+                        {card.viewCount}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
+                      <p className="text-sm text-gray-500 mb-1">Current Interval</p>
+                      <p className="text-xl font-semibold text-gray-900">
+                        {card.interval} days
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-                    <p className="text-sm text-gray-500 mb-1">Reviews</p>
-                    <p className="text-xl font-semibold text-gray-900">
-                      {card.successCount + card.failureCount}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-100">
-                    <p className="text-sm text-gray-500 mb-1">Views</p>
-                    <p className="text-xl font-semibold text-gray-900">
-                      {card.viewCount}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-100">
-                    <p className="text-sm text-gray-500 mb-1">Current Interval</p>
-                    <p className="text-xl font-semibold text-gray-900">
-                      {card.interval} days
-                    </p>
-                  </div>
-                </div>
 
-                {/* Review Schedule Section */}
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <h3 className="text-sm font-medium text-gray-900">
-                      Review Schedule
-                    </h3>
-                    <span className="text-xs text-gray-500 ml-auto">
-                      Step {((card.reviewStep ?? -1) + 1)} of 5
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {[1, 2, 7, 30, 365].map((interval, index) => {
-                      // Only calculate dates if lastReviewed exists and is valid
-                      const lastReviewed = card.lastReviewed ? new Date(card.lastReviewed) : new Date();
-                      const isValidDate = !isNaN(lastReviewed.getTime());
-                      const reviewDate = isValidDate ? addDays(lastReviewed, interval) : new Date();
-                      const isPast = isValidDate && reviewDate < new Date();
-                      const isNext = index === (card.reviewStep ?? -1);
+                  {/* Review Schedule Section */}
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <h3 className="text-sm font-medium text-gray-900">
+                        Review Schedule
+                      </h3>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        Step {((card.reviewStep ?? -1) + 1)} of 5
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {[1, 2, 7, 30, 365].map((interval, index) => {
+                        // Only calculate dates if lastReviewed exists and is valid
+                        const lastReviewed = card.lastReviewed ? new Date(card.lastReviewed) : new Date();
+                        const isValidDate = !isNaN(lastReviewed.getTime());
+                        const reviewDate = isValidDate ? addDays(lastReviewed, interval) : new Date();
+                        const isPast = isValidDate && reviewDate < new Date();
+                        const currentStep = card.reviewStep == null || card.reviewStep < 0 ? 0 : card.reviewStep;
+                        const isNext = index === currentStep;
 
-                      return (
-                        <div
-                          key={interval}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg",
-                            isPast
-                              ? "bg-gray-50"
-                              : isNext
-                              ? "bg-blue-50 border border-blue-100"
-                              : "bg-white border border-gray-100"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                                isPast
-                                  ? "bg-gray-100 text-gray-500"
-                                  : isNext
-                                  ? "bg-blue-100 text-blue-600"
-                                  : "bg-gray-100 text-gray-500"
-                              )}
-                            >
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p
+                        return (
+                          <div
+                            key={interval}
+                            className={cn(
+                              "flex items-center justify-between p-3 rounded-lg border transition-all",
+                              isPast
+                                ? "bg-gray-50 border-gray-100"
+                                : isNext
+                                ? "bg-blue-100 border-blue-400 shadow-lg scale-[1.03]"
+                                : "bg-white border-gray-100"
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
                                 className={cn(
-                                  "text-sm font-medium",
+                                  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
                                   isPast
-                                    ? "text-gray-400"
+                                    ? "bg-gray-100 text-gray-500"
                                     : isNext
-                                    ? "text-gray-900"
-                                    : "text-gray-600"
+                                    ? "bg-blue-500 text-white border-2 border-blue-400 shadow"
+                                    : "bg-gray-100 text-gray-500"
                                 )}
                               >
-                                {interval} {interval === 1 ? "day" : "days"}
-                              </p>
-                              <p
-                                className={cn(
-                                  "text-xs",
-                                  isPast
-                                    ? "text-gray-400"
-                                    : isNext
-                                    ? "text-gray-500"
-                                    : "text-gray-400"
-                                )}
-                              >
-                                {isValidDate ? format(reviewDate, "MMM d, yyyy") : "Not scheduled"}
-                              </p>
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p
+                                  className={cn(
+                                    "text-sm font-medium",
+                                    isPast
+                                      ? "text-gray-400"
+                                      : isNext
+                                      ? "text-blue-900 font-bold"
+                                      : "text-gray-600"
+                                  )}
+                                >
+                                  {interval} {interval === 1 ? "day" : "days"}
+                                </p>
+                                <p
+                                  className={cn(
+                                    "text-xs",
+                                    isPast
+                                      ? "text-gray-400"
+                                      : isNext
+                                      ? "text-blue-700 font-semibold"
+                                      : "text-gray-400"
+                                  )}
+                                >
+                                  {isValidDate ? format(reviewDate, "MMM d, yyyy") : "Not scheduled"}
+                                </p>
+                              </div>
                             </div>
+                            {isNext && (
+                              <span className="flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-200 px-3 py-1 rounded-full shadow border border-blue-300 animate-pulse">
+                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                                Next Review
+                              </span>
+                            )}
                           </div>
-                          {isNext && (
-                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                              Next up
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          </div>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </TooltipProvider>

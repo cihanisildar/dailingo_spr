@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const userEmail = await getCurrentUser();
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7'); // Default to next 7 days
+    const startDays = parseInt(searchParams.get('startDays') || '-14'); // Default: show 2 weeks in the past
 
     const user = await prisma.user.findUnique({
       where: { email: userEmail },
@@ -23,6 +24,8 @@ export async function GET(request: Request) {
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startDate = new Date(startOfToday);
+    startDate.setDate(startDate.getDate() + startDays);
     const endDate = new Date(startOfToday);
     endDate.setDate(endDate.getDate() + days);
 
@@ -49,25 +52,14 @@ export async function GET(request: Request) {
             id: true
           }
         },
-        reviews: {
-          where: {
-            createdAt: {
-              gte: startOfToday
-            }
-          },
-          select: {
-            id: true,
-            isSuccess: true,
-            createdAt: true
-          }
-        }
+        reviews: true // fetch all reviews for this card
       }
     });
 
     console.log('Found active cards:', cards.length);
 
     // Get the review schedule intervals
-    const intervals = user.reviewSchedule?.intervals || [1, 7, 30, 365];
+    const intervals = user.reviewSchedule?.intervals || [1, 2, 7, 30, 365];
     console.log('Review schedule intervals:', intervals);
 
     // Group cards by their review dates
@@ -98,7 +90,7 @@ export async function GET(request: Request) {
       const immediateNextReviewStr = format(immediateNextReview, 'yyyy-MM-dd');
       
       // Add immediate next review if it's within range
-      if (immediateNextReview >= startOfToday && immediateNextReview < endDate) {
+      if (immediateNextReview >= startDate && immediateNextReview < endDate) {
         if (!acc[immediateNextReviewStr]) {
           acc[immediateNextReviewStr] = {
             total: 0,
@@ -118,10 +110,12 @@ export async function GET(request: Request) {
           return format(reviewDate, 'yyyy-MM-dd') === immediateNextReviewStr;
         });
 
+        // Add the immediate review
         acc[immediateNextReviewStr].cards.push({
           ...card,
           reviewStep: card.reviewStep,
-          isFromFailure: card.failureCount > 0
+          isFromFailure: card.failureCount > 0,
+          isFutureReview: false // Explicitly mark as not future review
         });
         acc[immediateNextReviewStr].total++;
         
@@ -137,7 +131,9 @@ export async function GET(request: Request) {
 
       // Then add future potential reviews (shown differently in UI)
       intervals.forEach((interval, step) => {
-        if (step > card.reviewStep) {  // Only future steps
+        // Only add future reviews for steps AFTER the current reviewStep
+        // This ensures we don't duplicate reviews for the same interval
+        if (step > card.reviewStep) {
           const futureReviewDate = addDays(new Date(baseDate), interval);
           
           if (!isValid(futureReviewDate)) {
@@ -147,7 +143,10 @@ export async function GET(request: Request) {
 
           const futureDateStr = format(futureReviewDate, 'yyyy-MM-dd');
           
-          if (futureReviewDate >= startOfToday && futureReviewDate < endDate) {
+          // Don't add future reviews for dates that already have immediate reviews
+          if (futureReviewDate >= startDate && 
+              futureReviewDate < endDate && 
+              !acc[futureDateStr]?.cards.some(c => c.id === card.id)) {
             if (!acc[futureDateStr]) {
               acc[futureDateStr] = {
                 total: 0,

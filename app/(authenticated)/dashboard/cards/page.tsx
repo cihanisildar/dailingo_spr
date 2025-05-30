@@ -47,6 +47,7 @@ export default function CardsPage() {
   const [newWord, setNewWord] = useState("");
   const [newDefinition, setNewDefinition] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   
   const { data: cards = [], isLoading } = useCards();
   const { mutate: createCard, isPending } = useCreateCard();
@@ -189,79 +190,95 @@ export default function CardsPage() {
   return (
     <div className="space-y-6">
       {/* Header with Title and Add Button */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-4 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">My Cards</h1>
-            <p className="text-purple-100 mt-1">Manage and organize your vocabulary cards.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">My Cards</h1>
+            <p className="text-purple-100 mt-1 text-sm sm:text-base">Manage and organize your vocabulary cards.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-white/10 hover:bg-white/20 text-white border-0" 
-                size="lg"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                Add Card
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Card</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Word</label>
-                  <Input 
-                    placeholder="Enter word" 
-                    value={newWord}
-                    onChange={(e) => setNewWord(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Definition</label>
-                  <Input 
-                    placeholder="Enter definition"
-                    value={newDefinition}
-                    onChange={(e) => setNewDefinition(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DialogFooter className="mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+          <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
+                  size="lg"
                 >
-                  Cancel
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add Card
                 </Button>
-                <Button
-                  onClick={handleCreateCard}
-                  disabled={!newWord.trim() || !newDefinition.trim() || isPending}
-                >
-                  {isPending ? "Creating..." : "Create Card"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Card</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Word</label>
+                    <Input 
+                      placeholder="Enter word" 
+                      value={newWord}
+                      onChange={(e) => setNewWord(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Definition</label>
+                    <Input 
+                      placeholder="Enter definition"
+                      value={newDefinition}
+                      onChange={(e) => setNewDefinition(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateCard}
+                    disabled={!newWord.trim() || !newDefinition.trim() || isPending}
+                  >
+                    {isPending ? "Creating..." : "Create Card"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-
-        {/* Search and Filter Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4">
+        {/* Search bar always visible */}
+        <div className="mb-2">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4" />
             <Input
               placeholder="Search cards..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20"
+              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 w-full"
             />
           </div>
-          <div className="flex items-center gap-4">
+        </div>
+        {/* Show Filters button for mobile */}
+        <div className="sm:hidden mb-2 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white flex items-center gap-1 px-2 py-1"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            {showFilters ? "Hide Filters" : "Show Filters"}
+            <svg className={showFilters ? "rotate-180 transition-transform" : "transition-transform"} width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </Button>
+        </div>
+        {/* Filters and view toggles: always visible on sm+, collapsible on mobile */}
+        <div className={showFilters ? "block" : "hidden sm:block"}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 w-full sm:w-auto">
             <Select value={selectedList} onValueChange={setSelectedList}>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
+                    <SelectTrigger className="w-full sm:w-[180px] bg-white/10 border-white/20 text-white">
                       <SelectValue placeholder="Filter by list" className="truncate" />
                     </SelectTrigger>
                   </TooltipTrigger>
@@ -274,7 +291,7 @@ export default function CardsPage() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <SelectContent className="w-[180px] bg-white border-none">
+              <SelectContent className="w-full sm:w-[180px] bg-white border-none">
                 <SelectItem value="all" className="hover:bg-gray-100">
                   <div className="flex items-center gap-2">
                     <span>All Lists</span>
@@ -304,10 +321,10 @@ export default function CardsPage() {
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white/10 border-white/20 text-white">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent className="w-[180px] bg-white border-none">
+              <SelectContent className="w-full sm:w-[180px] bg-white border-none">
                 <SelectItem value="date-desc" className="hover:bg-gray-100">
                   <div className="flex items-center gap-2">
                     <span>Newest First</span>
@@ -335,7 +352,7 @@ export default function CardsPage() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex bg-white/10 rounded-md p-1">
+            <div className="flex bg-white/10 rounded-md p-1 w-full sm:w-auto justify-center sm:justify-start">
               <Button
                 variant="ghost"
                 size="icon"

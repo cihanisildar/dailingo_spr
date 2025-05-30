@@ -1,36 +1,7 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { redirect, usePathname } from "next/navigation";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  User,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Languages,
-  Clock,
-  BookOpen,
-  List,
-  Calendar,
-  Flame,
-  ChevronRight as ChevronRightIcon,
-  History,
-  CreditCard,
-  GraduationCap,
-  ScrollText,
-  Menu,
-  Globe,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
-import { useState } from "react";
 import QueryProvider from "@/components/providers/query-provider";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,17 +9,43 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
+  SheetTrigger,
 } from "@/components/ui/sheet";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import api from "@/lib/axios";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronRight as ChevronRightIcon,
+  Clock,
+  CreditCard,
+  Flame,
+  Globe,
+  GraduationCap,
+  History,
+  LayoutDashboard,
+  List,
+  LogOut,
+  Menu,
+  ScrollText,
+  Settings,
+  User
+} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
-import dailingo_logo from "../../public/dailingo_logo.png";
+import Link from "next/link";
+import { redirect, usePathname } from "next/navigation";
+import { useState } from "react";
+import Repeeker_logo from "../../public/repeeker.png";
 
 const navItems = [
   {
@@ -340,9 +337,9 @@ export default function AuthenticatedLayout({
                 isCollapsed ? "justify-center w-full" : "text-xl"
               )}
             >
-                <Image src={dailingo_logo} alt="logo" width={50} height={50} />
+                <Image src={Repeeker_logo} alt="logo" width={50} height={50} />
              
-              {!isCollapsed && <span className="text-gray-900">Dailingo</span>}
+              {!isCollapsed && <span className="text-gray-900">Repeeker</span>}
             </Link>
             <Button
               variant="ghost"
@@ -411,15 +408,16 @@ export default function AuthenticatedLayout({
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] p-0">
                 <SheetHeader className="px-4 py-4 border-b">
-                  <SheetTitle className="flex items-center gap-2.5 font-bold text-xl">
-                    <Image
-                      src={dailingo_logo}
-                      alt="logo"
-                      width={50}
-                      height={50}
-                    />
-
-                    <span className="text-gray-900">Dailingo</span>
+                  <SheetTitle asChild>
+                    <Link href="/" className="flex items-center gap-2.5 font-bold text-xl focus:outline-none">
+                      <Image
+                        src={Repeeker_logo}
+                        alt="logo"
+                        width={50}
+                        height={50}
+                      />
+                      <span className="text-gray-900">Repeeker</span>
+                    </Link>
                   </SheetTitle>
                   <SheetDescription className="text-sm text-gray-500">
                     Navigate through your learning journey

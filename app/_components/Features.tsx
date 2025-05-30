@@ -11,11 +11,11 @@ const features = [
     title: "Spaced Repetition",
     description:
       "Our algorithm schedules reviews at the optimal time to maximize long-term retention with minimal effort.",
-    gradient: "from-blue-500/20 via-purple-500/20 to-pink-500/20",
-    iconGradient: "from-blue-500/30 via-blue-400/25 to-blue-300/20",
-    iconColor: "text-blue-600 dark:text-blue-400",
-    hoverColor: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
-    borderColor: "border-blue-200 dark:border-blue-800/30",
+    gradient: "from-[#5B7CFA]/20 via-[#6C5DD3]/20 to-[#5B7CFA]/10",
+    iconGradient: "from-[#5B7CFA]/30 via-[#6C5DD3]/25 to-[#5B7CFA]/20",
+    iconColor: "text-[#5B7CFA] dark:text-[#6C5DD3]",
+    hoverColor: "group-hover:text-[#5B7CFA] dark:group-hover:text-[#6C5DD3]",
+    borderColor: "border-[#5B7CFA]/20 dark:border-[#6C5DD3]/30",
   },
   {
     icon: ListChecks,
@@ -186,7 +186,7 @@ export default function Features() {
         <div ref={titleRef} className="text-center mb-16">
           <h2 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl mb-4 opacity-0">
             Features designed for{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] dark:from-[#5B7CFA] dark:to-[#6C5DD3]">
               effective learning
             </span>
           </h2>

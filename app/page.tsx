@@ -9,6 +9,7 @@ import Testimonials from "./_components/Testimonials";
 import Footer from "./_components/Footer";
 // import Pricing from "./_components/Pricing";
 import useLenis from "@/hooks/useLenis";
+import Pricing from "./_components/Pricing";
 
 export default function LandingPage() {
   // Smooth scrolling

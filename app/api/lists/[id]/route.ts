@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { ReviewStatus } from '@prisma/client';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const userEmail = await getCurrentUser();
+    const session = await getServerSession(authOptions);
     const listId = params.id;
 
     const user = await prisma.user.findUnique({
-      where: { email: userEmail },
+      where: { email: await getCurrentUser() },
       select: { id: true }
     });
 
@@ -19,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const list = await prisma.wordList.findFirst({
+    const list = await prisma.wordList.findUnique({
       where: {
         id: listId,
         OR: [
@@ -28,6 +31,12 @@ export async function GET(
         ]
       },
       include: {
+        user: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
         cards: {
           include: {
             wordDetails: true
@@ -44,6 +53,29 @@ export async function GET(
 
     if (!list) {
       return NextResponse.json({ error: 'Word list not found' }, { status: 404 });
+    }
+
+    // If the list is private and user is not the owner, deny access
+    if (!list.isPublic && (!session || list.userId !== session.user.id)) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    // If viewing someone else's list, remove user-specific data
+    if (list.userId !== session?.user?.id) {
+      list.cards = list.cards.map(card => ({
+        ...card,
+        successCount: 0,
+        failureCount: 0,
+        viewCount: 0,
+        interval: 0,
+        reviewStep: 0,
+        lastReviewed: null,
+        nextReview: new Date(),
+        reviewStatus: ReviewStatus.PAUSED,
+      }));
     }
 
     return NextResponse.json(list);
@@ -122,6 +154,8 @@ export async function DELETE(
   try {
     const userEmail = await getCurrentUser();
     const listId = params.id;
+    const body = await request.json();
+    const { deleteCards } = body;
 
     const user = await prisma.user.findUnique({
       where: { email: userEmail },
@@ -147,10 +181,18 @@ export async function DELETE(
       );
     }
 
-    // Delete all cards in the list first
-    await prisma.card.deleteMany({
-      where: { wordListId: listId }
-    });
+    // Only delete cards if requested
+    if (deleteCards) {
+      await prisma.card.deleteMany({
+        where: { wordListId: listId }
+      });
+    } else {
+      // Unlink cards from the list
+      await prisma.card.updateMany({
+        where: { wordListId: listId },
+        data: { wordListId: null }
+      });
+    }
 
     // Then delete the list
     await prisma.wordList.delete({

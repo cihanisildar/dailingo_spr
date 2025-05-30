@@ -167,6 +167,7 @@ export default function EditListPage() {
       // Update all related queries with the new data
       queryClient.setQueryData(["wordList", params.id], updatedList);
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
+      queryClient.invalidateQueries({ queryKey: ["publicLists"] });
       toast.success("List updated successfully");
     },
     onSettled: () => {
@@ -174,6 +175,7 @@ export default function EditListPage() {
       // Always refetch after error or success to ensure cache consistency
       queryClient.invalidateQueries({ queryKey: ["wordList", params.id] });
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
+      queryClient.invalidateQueries({ queryKey: ["publicLists"] });
     }
   });
 

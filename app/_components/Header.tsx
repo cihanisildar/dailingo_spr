@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import dailingo_logo from "../../public/dailingo_logo.png";
+import Repeeker_logo from "../../public/repeeker.png";
 gsap.registerPlugin(ScrollTrigger);
 
 export default function Header() {
@@ -84,9 +84,9 @@ export default function Header() {
           {/* <div className="relative"> */}
             {/* <div className="absolute inset-0 bg-gray-200 rounded-lg blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div> */}
 
-            <Image src={dailingo_logo} alt="logo" width={50} height={50} />
+            <Image src={Repeeker_logo} alt="logo" width={50} height={50} />
           {/* </div> */}
-          <span className="text-xl font-bold text-gray-900">Dailingo</span>
+          <span className="text-xl font-bold text-gray-900">Repeeker</span>
         </Link>
         <nav ref={navRef} className="hidden md:flex gap-4">
           {["Features", "How It Works", "Testimonials" /* , "Pricing" */].map(
@@ -94,9 +94,9 @@ export default function Header() {
               <Link
                 key={item}
                 href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-                className="nav-link text-sm font-medium px-3 py-2 text-gray-600 transition-colors duration-200 relative group hover:text-rose-600"
+                className="nav-link text-sm font-medium px-3 py-2 text-gray-600 transition-colors duration-200 relative group hover:text-[#5B7CFA]"
               >
-                <span className="absolute inset-x-0 -bottom-0.5 h-[1px] bg-rose-600/50 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out"></span>
+                <span className="absolute inset-x-0 -bottom-0.5 h-[1px] bg-[#5B7CFA]/50 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out"></span>
                 <span className="relative z-10">{item}</span>
               </Link>
             )
@@ -107,27 +107,18 @@ export default function Header() {
             <div className="h-8 w-8 rounded-full bg-gray-100 animate-pulse" />
           ) : session ? (
             <Button
-              className="bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-200/50 hover:shadow-rose-200/75 transition-all duration-300"
+              className="bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-200/75 transition-all duration-300"
               onClick={() => router.push("/dashboard")}
             >
               Dashboard
             </Button>
           ) : (
-            <>
-              <Button
-                variant="ghost"
-                className="text-sm font-medium text-gray-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300"
-                onClick={handleSignIn}
-              >
-                Log in
-              </Button>
-              <Button
-                className="bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-200/50 hover:shadow-rose-200/75 transition-all duration-300"
-                onClick={handleSignIn}
-              >
-                Get Started
-              </Button>
-            </>
+            <Button
+              className="bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-200/75 transition-all duration-300"
+              onClick={handleSignIn}
+            >
+              Get Started
+            </Button>
           )}
         </div>
       </div>

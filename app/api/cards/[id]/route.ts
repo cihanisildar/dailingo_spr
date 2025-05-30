@@ -1,84 +1,91 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const userEmail = await getCurrentUser();
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-      select: { id: true }
-    });
+    const session = await getServerSession(authOptions);
+    const cardId = params.id;
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    console.log('[CARD API] Session user:', session?.user?.email);
+    console.log('[CARD API] Fetching card:', cardId);
 
     const card = await prisma.card.findUnique({
-      where: { id: params.id },
+      where: { id: cardId },
       include: {
-        wordDetails: true,
         wordList: {
-          select: {
-            name: true,
-            id: true,
-            isPublic: true,
-            userId: true
+          include: {
+            user: {
+              select: {
+                email: true,
+                name: true,
+              }
+            }
           }
         },
-        user: {
-          select: {
-            email: true
-          }
-        }
-      }
+        wordDetails: true,
+      },
     });
 
+    // Add userEmail to wordList for frontend ownership checks
+    if (card && card.wordList && card.wordList.user) {
+      (card.wordList as any).userEmail = card.wordList.user.email;
+    }
+
+    console.log('[CARD API] Card data:', card);
+
     if (!card) {
+      console.log('[CARD API] Card not found:', cardId);
       return NextResponse.json({ error: 'Card not found' }, { status: 404 });
     }
 
-    // Check if user has access to this card
-    if (card.user.email !== userEmail && !card.wordList?.isPublic) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // If the card has a wordList, use the existing logic
+    // If the card has no wordList (uncategorized), check if the session user is the card owner
+    let isOwner = false;
+    let isPublic = false;
+    if (card.wordList) {
+      isOwner = session?.user?.email === card.wordList.user?.email;
+      isPublic = !!card.wordList.isPublic;
+      console.log('[CARD API] Card has wordList. isOwner:', isOwner, 'isPublic:', isPublic);
+    } else {
+      // For uncategorized cards, fetch userId and compare to session user
+      // Need to include userId in the card query
+      const cardOwner = await prisma.user.findUnique({
+        where: { id: card.userId },
+        select: { email: true }
+      });
+      isOwner = session?.user?.email === cardOwner?.email;
+      isPublic = false;
+      console.log('[CARD API] Card has NO wordList. cardOwner:', cardOwner, 'isOwner:', isOwner);
     }
 
-    // If it's a public card and not owned by the user, get or create user's progress
-    let userProgress = null;
-    if (card.wordList?.isPublic && card.user.email !== userEmail) {
-      userProgress = await prisma.cardProgress.findFirst({
-        where: {
-          userId: user.id,
-          originalCardId: card.id
-        }
-      });
+    if (!isOwner && !isPublic) {
+      console.log('[CARD API] Access denied for user:', session?.user?.email, 'on card:', cardId);
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
 
-      if (!userProgress) {
-        userProgress = await prisma.cardProgress.create({
-          data: {
-            userId: user.id,
-            originalCardId: card.id,
-            viewCount: 0,
-            successCount: 0,
-            failureCount: 0
-          }
-        });
-      }
-
-      // Return card with user's progress
+    // Only return full card details to the owner
+    if (!isOwner) {
+      console.log('[CARD API] Not owner, returning limited card data.');
       return NextResponse.json({
         ...card,
-        viewCount: userProgress.viewCount,
-        successCount: userProgress.successCount,
-        failureCount: userProgress.failureCount,
-        lastReviewed: userProgress.lastReviewed,
-        isPublicCard: true
+        successCount: 0,
+        failureCount: 0,
+        viewCount: 0,
+        interval: 0,
+        reviewStep: 0,
+        lastReviewed: null,
+        nextReview: null,
+        reviewStatus: 'NOT_STARTED',
       });
     }
 
+    console.log('[CARD API] Returning full card data to owner.');
     return NextResponse.json(card);
   } catch (error) {
     console.error('Error fetching card:', error);
@@ -94,53 +101,87 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userEmail = await getCurrentUser();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    const cardId = params.id;
     const body = await request.json();
-    const { word, definition, wordListId, synonyms, antonyms, examples, notes, reviewStatus } = body;
 
-    // Verify user owns the card
+    // First check if the user owns the card
     const card = await prisma.card.findUnique({
-      where: { id: params.id },
-      include: { user: { select: { email: true } } }
+      where: { id: cardId },
+      include: {
+        wordList: {
+          include: {
+            user: {
+              select: {
+                email: true
+              }
+            }
+          }
+        }
+      },
     });
 
-    if (!card || card.user.email !== userEmail) {
+    if (!card) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 });
     }
 
-    // Update card and its details
+    // Verify ownership (safe for uncategorized cards)
+    let isOwner = false;
+    if (card.wordList) {
+      isOwner = card.wordList.user.email === session.user.email;
+    } else {
+      const cardOwner = await prisma.user.findUnique({
+        where: { id: card.userId },
+        select: { email: true }
+      });
+      isOwner = cardOwner?.email === session.user.email;
+    }
+    if (!session || !isOwner) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const updatedCard = await prisma.card.update({
-      where: { id: params.id },
+      where: { id: cardId },
       data: {
-        word,
-        definition,
-        wordListId,
-        reviewStatus,
+        word: body.word,
+        definition: body.definition,
         wordDetails: {
-          update: {
-            synonyms,
-            antonyms,
-            examples,
-            notes
-          }
-        }
+          upsert: {
+            create: {
+              synonyms: body.synonyms || [],
+              antonyms: body.antonyms || [],
+              examples: body.examples || [],
+              notes: body.notes || '',
+            },
+            update: {
+              synonyms: body.synonyms || [],
+              antonyms: body.antonyms || [],
+              examples: body.examples || [],
+              notes: body.notes || '',
+            },
+          },
+        },
       },
       include: {
         wordDetails: true,
         wordList: {
-          select: {
-            name: true,
-            id: true
+          include: {
+            user: {
+              select: {
+                email: true,
+                name: true
+              }
+            }
           }
-        }
-      }
+        },
+      },
     });
 
     return NextResponse.json(updatedCard);
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     console.error('Error updating card:', error);
     return NextResponse.json(
       { error: 'Failed to update card' },
@@ -154,28 +195,59 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userEmail = await getCurrentUser();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+    const cardId = params.id;
 
-    // Verify user owns the card
+    // First check if the user owns the card
     const card = await prisma.card.findUnique({
-      where: { id: params.id },
-      include: { user: { select: { email: true } } }
+      where: { id: cardId },
+      include: {
+        wordList: {
+          include: {
+            user: {
+              select: {
+                email: true
+              }
+            }
+          }
+        }
+      },
     });
 
-    if (!card || card.user.email !== userEmail) {
+    if (!card) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 });
     }
 
-    // Delete card (this will cascade delete wordDetails due to our schema)
-    await prisma.card.delete({
-      where: { id: params.id }
+    // Verify ownership (safe for uncategorized cards)
+    let isOwner = false;
+    if (card.wordList) {
+      isOwner = card.wordList.user.email === session.user.email;
+    } else {
+      const cardOwner = await prisma.user.findUnique({
+        where: { id: card.userId },
+        select: { email: true }
+      });
+      isOwner = cardOwner?.email === session.user.email;
+    }
+    if (!session || !isOwner) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    // Delete the card's details first
+    await prisma.wordDetails.deleteMany({
+      where: { cardId },
     });
 
-    return NextResponse.json({ message: 'Card deleted successfully' });
+    // Then delete the card
+    await prisma.card.delete({
+      where: { id: cardId },
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     console.error('Error deleting card:', error);
     return NextResponse.json(
       { error: 'Failed to delete card' },

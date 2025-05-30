@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const quicksand = Quicksand({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Dailingo - Learn Vocabulary Effectively",
+  title: "Repeeker - Learn Vocabulary Effectively",
   description:
     "Master vocabulary with scientifically-proven spaced repetition.",
 };

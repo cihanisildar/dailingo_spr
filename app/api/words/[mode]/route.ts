@@ -35,7 +35,13 @@ export async function GET(
     };
 
     const cards = await prisma.card.findMany({
-      where,
+      where: {
+        ...where,
+        AND: [
+          { word: { not: "" } },
+          { definition: { not: "" } }
+        ]
+      },
       select: {
         id: true,
         word: true,
@@ -63,7 +69,7 @@ export async function GET(
     const words = cards.map(card => ({
       id: card.id,
       word: card.word,
-      translation: card.definition,
+      definition: card.definition,
       wordList: card.wordList
     }));
 

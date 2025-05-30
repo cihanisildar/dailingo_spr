@@ -23,7 +23,7 @@ export async function GET() {
       update: {},
       create: {
         userId: user.id,
-        intervals: [1, 7, 30, 365],
+        intervals: [1, 2, 7, 30, 365],
         name: 'Default Schedule',
         description: 'Default spaced repetition schedule',
         isDefault: true
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       },
       create: {
         userId: user.id,
-        intervals: intervals || [1, 7, 30, 365],
+        intervals: intervals || [1, 2, 7, 30, 365],
         name: name || 'Custom Schedule',
         description,
         isDefault: false

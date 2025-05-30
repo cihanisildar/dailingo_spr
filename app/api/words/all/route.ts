@@ -19,6 +19,10 @@ export async function GET() {
     const cards = await prisma.card.findMany({
       where: {
         userId: user.id,
+        AND: [
+          { word: { not: "" } },
+          { definition: { not: "" } }
+        ]
       },
       select: {
         id: true,

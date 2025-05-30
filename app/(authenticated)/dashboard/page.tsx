@@ -264,7 +264,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link href="/dashboard/review/today">
+        <Link href="/dashboard/review">
           <Card className="p-6 hover:shadow-lg transition-all group">
             <div className="flex items-center justify-between">
               <div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/cards/manage">
+        <Link href="/dashboard/cards">
           <Card className="p-6 hover:shadow-lg transition-all group">
             <div className="flex items-center justify-between">
               <div>
