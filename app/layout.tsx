@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: "Repeeker - Learn Vocabulary Effectively",
   description:
     "Master vocabulary with scientifically-proven spaced repetition.",
+  icons: {
+    icon: '/repeeker.png',
+  },
 };
 
 export default function RootLayout({
