@@ -10,15 +10,11 @@ const nextConfig = {
   output: 'standalone',
   // Optimize build process
   swcMinify: true,
-  // Optimize build process
+  // Disable experimental features
   experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['@prisma/client', 'date-fns', 'lucide-react'],
-    // Add memory optimization
-    memoryBasedWorkersCount: true,
-    // Disable some heavy optimizations
-    optimizeServerReact: false,
-    serverComponentsExternalPackages: ['@prisma/client'],
+    // Disable all experimental features
+    optimizeCss: false,
+    optimizePackageImports: [],
   },
   // Handle error pages
   typescript: {
@@ -27,10 +23,20 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Add webpack optimization
-  webpack: (config, { isServer }) => {
+  // Disable build traces
+  generateBuildId: () => 'build',
+  // Optimize build process
+  poweredByHeader: false,
+  reactStrictMode: true,
+  compress: true,
+  // Add specific webpack configuration
+  webpack: (config, { dev, isServer }) => {
     // Optimize for production
-    if (!isServer) {
+    if (!dev && !isServer) {
+      // Disable source maps in production
+      config.devtool = false;
+      
+      // Optimize chunks
       config.optimization = {
         ...config.optimization,
         minimize: true,
