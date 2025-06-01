@@ -15,10 +15,10 @@ import { signIn } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import dailingo_logo from "../../../public/repeeker.png";
 
-export default function SignInPage() {
+function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const router = useRouter();
@@ -203,5 +203,13 @@ export default function SignInPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInForm />
+    </Suspense>
   );
 }
