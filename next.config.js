@@ -31,6 +31,10 @@ const nextConfig = {
   compress: true,
   // Disable source maps in production
   productionBrowserSourceMaps: false,
+  // Disable static optimization
+  staticPageGenerationTimeout: 0,
+  // Disable automatic static optimization for all pages
+  staticPageGenerationTimeout: 0,
   // Add specific webpack configuration
   webpack: (config, { dev, isServer }) => {
     // Optimize for production
