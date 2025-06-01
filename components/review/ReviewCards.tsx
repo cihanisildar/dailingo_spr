@@ -8,7 +8,7 @@ import { Card } from "@/types/card";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Trophy, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import { FlashcardReview } from "./FlashcardReview";
@@ -30,6 +30,7 @@ type CardWithReviews = Card & { reviews?: Review[] };
 interface ReviewCardsProps {
   initialMode?: 'multiple-choice' | 'flashcard';
   initialCount?: number;
+  initialRepeat?: boolean;
 }
 
 interface SessionState {
@@ -43,9 +44,10 @@ interface SessionState {
   correctAnswers: number;
 }
 
-export default function ReviewCards({ initialMode = 'multiple-choice', initialCount }: ReviewCardsProps) {
+export default function ReviewCards({ initialMode = 'multiple-choice', initialCount, initialRepeat = false }: ReviewCardsProps) {
   const router = useRouter();
   const { width, height } = useWindowSize();
+  const [repeat, setRepeat] = useState(initialRepeat);
   const { data: allWords = [] } = useQuery({
     queryKey: ["words", "all"],
     queryFn: async () => {
@@ -54,7 +56,7 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
     }
   });
 
-  const { data: cardsData } = useTodayCards();
+  const { data: cardsData, refetch, isFetching, isLoading: isCardsLoading } = useTodayCards({ repeat });
   const { mutate: updateReview } = useUpdateReview();
   const { mutate: updateStreak } = useUpdateStreak();
 
@@ -82,6 +84,10 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
 
   // Add showWordModal state
   const [showWordModal, setShowWordModal] = useState(false);
+
+  // Add sessionId state
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const sessionStarted = useRef(false);
 
   // Initialize session cards
   useEffect(() => {
@@ -157,7 +163,8 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
         onSuccess: () => {
           if (session.currentIndex === session.cards.length - 1) {
             updateStreak();
-            setSession(prev => ({ ...prev, isComplete: true, showConfetti: true }));
+            // Instead of marking as complete, just show the completion screen
+            setSession(prev => ({ ...prev, showConfetti: true }));
           }
         }
       }
@@ -166,35 +173,25 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
 
   const handleFlashcardResponse = (knewIt: boolean) => {
     if (!currentCard) return;
-    
-    updateReview(
-      { cardId: currentCard.id, isSuccess: knewIt },
-      {
-        onSuccess: () => {
-          if (session.currentIndex === session.cards.length - 1) {
-            updateStreak();
-            setSession(prev => ({ 
-              ...prev, 
-              isComplete: true, 
-              showConfetti: true,
-              correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-            }));
-          } else {
-            setSession(prev => ({ 
-              ...prev, 
-              currentIndex: prev.currentIndex + 1,
-              correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-            }));
-          }
-        },
-        onSettled: () => {
-          setTimeout(() => {
-            setIsFlipping(false);
-            setIsSubmitting(false);
-          }, 350);
-        }
-      }
-    );
+    // Optimistically update UI
+    if (session.currentIndex === session.cards.length - 1) {
+      setSession(prev => ({
+        ...prev,
+        showConfetti: true,
+        correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
+      }));
+      updateStreak();
+    } else {
+      setSession(prev => ({
+        ...prev,
+        currentIndex: prev.currentIndex + 1,
+        correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
+      }));
+    }
+    setIsFlipping(false);
+    setIsSubmitting(false);
+    // Fire mutation in background
+    updateReview({ cardId: currentCard.id, isSuccess: knewIt });
   };
 
   const handleNext = () => {
@@ -225,9 +222,57 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
 
   const currentCard = session.cards[session.currentIndex];
 
+  // When repeat changes, refetch
+  useEffect(() => {
+    refetch();
+  }, [repeat]);
+
+  // Create review session when cards are loaded and session not started
+  useEffect(() => {
+    if (allCards.length > 0 && !sessionStarted.current) {
+      sessionStarted.current = true;
+      // POST to /api/review-session
+      fetch('/api/review-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: initialMode,
+          isRepeat: repeat,
+          cards: allCards.map(card => card.id),
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.id) setSessionId(data.id);
+        })
+        .catch(() => {});
+    }
+  }, [allCards, initialMode, repeat]);
+
+  // Complete review session when finished
+  useEffect(() => {
+    if (session.isComplete && sessionId) {
+      fetch('/api/review-session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+    }
+  }, [session.isComplete, sessionId]);
+
+  // Show loading spinner if cards are loading
+  if (isCardsLoading || !cardsData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4" />
+        <p className="text-blue-500 text-lg">Loading cards...</p>
+      </div>
+    );
+  }
+
   if (session.isComplete) {
     const accuracy = Math.round((session.correctAnswers / session.cards.length) * 100);
-  return (
+    return (
       <div className="max-w-4xl mx-auto">
         {session.showConfetti && (
           <Confetti
@@ -264,17 +309,36 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
               <div className="bg-gray-50 rounded-xl p-6 text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">{accuracy}%</div>
                 <div className="text-gray-600">Accuracy</div>
-          </div>
-        </div>
+              </div>
+            </div>
 
             <div className="flex justify-center gap-4">
-          <Button
+              <Button
+                onClick={() => {
+                  setRepeat(true);
+                  setSession({
+                    cards: [],
+                    currentIndex: 0,
+                    showAnswer: false,
+                    options: [],
+                    selectedAnswer: null,
+                    isComplete: false,
+                    showConfetti: false,
+                    correctAnswers: 0
+                  });
+                }}
+                className="flex items-center gap-2"
+                disabled={isFetching}
+              >
+                Repeat Session
+              </Button>
+              <Button
                 onClick={() => router.push('/dashboard/review')}
                 className="flex items-center gap-2"
-          >
+              >
                 Return to Review
-          </Button>
-          </div>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -325,7 +389,6 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
             updateStreak();
               setSession(prev => ({ 
                 ...prev, 
-                isComplete: true, 
                 showConfetti: true,
                 correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
               }));
@@ -348,6 +411,12 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
   };
   return (
       <div className="max-w-4xl mx-auto">
+        {/* Progress indicator for flashcard mode */}
+        <div className="flex justify-center mt-6 mb-4">
+          <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-4 py-1 rounded-full">
+            Card {session.currentIndex + 1} of {session.cards.length}
+          </span>
+        </div>
         <FlashcardReview
           card={currentCard}
           onResponse={handleFlashcardResponseWithFlip}
@@ -368,7 +437,7 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
             <div className="flex-1" />
           </div>
         </div>
-          </div>
+      </div>
     );
   }
 

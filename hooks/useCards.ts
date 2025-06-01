@@ -24,11 +24,13 @@ export function useCards() {
   });
 }
 
-export function useTodayCards() {
+export function useTodayCards(options?: { repeat?: boolean }) {
+  const repeat = options?.repeat;
   return useQuery({
-    queryKey: cardKeys.today(),
+    queryKey: [...cardKeys.today(), { repeat }],
     queryFn: async () => {
-      const { data } = await api.get('/cards/today');
+      const url = repeat ? '/cards/today?repeat=true' : '/cards/today';
+      const { data } = await api.get(url);
       return data;
     },
   });

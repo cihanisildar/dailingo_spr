@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
-import { Flame, Clock, BookOpen, List, ArrowRight, CheckCircle } from "lucide-react";
+import { Flame, Clock, BookOpen, List, ArrowRight, CheckCircle, FileText, Bookmark, Settings, BarChart2, PlayCircle, Layers, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useCards, useTodayCards } from "@/hooks/useCards";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { format, addDays } from "date-fns";
+import { usePathname } from "next/navigation";
 
 // Add this interface near the top of the file
 interface Review {
@@ -24,6 +25,7 @@ interface Review {
 }
 
 export default function DashboardPage() {
+  const pathname = usePathname();
   // Fetch streak data
   const { data: streak, isLoading: isLoadingStreak } = useQuery({
     queryKey: ['streak'],
@@ -113,6 +115,44 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Mobile Navigation */}
+      <div className="lg:hidden">
+        <div className="grid grid-cols-4 gap-3 px-1">
+          <Link href="/dashboard/review">
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/review' ? 'bg-emerald-50 border-emerald-200' : 'hover:bg-emerald-50'}`}>
+              <div className="flex flex-col items-center gap-2">
+                <PlayCircle className={`w-6 h-6 ${pathname === '/dashboard/review' ? 'text-emerald-600' : 'text-emerald-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/review' ? 'text-emerald-600' : 'text-emerald-500'}`}>Review</span>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/dashboard/cards">
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/cards' ? 'bg-blue-50 border-blue-200' : 'hover:bg-blue-50'}`}>
+              <div className="flex flex-col items-center gap-2">
+                <Layers className={`w-6 h-6 ${pathname === '/dashboard/cards' ? 'text-blue-600' : 'text-blue-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/cards' ? 'text-blue-600' : 'text-blue-500'}`}>Cards</span>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/dashboard/lists">
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/lists' ? 'bg-purple-50 border-purple-200' : 'hover:bg-purple-50'}`}>
+              <div className="flex flex-col items-center gap-2">
+                <Bookmark className={`w-6 h-6 ${pathname === '/dashboard/lists' ? 'text-purple-600' : 'text-purple-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/lists' ? 'text-purple-600' : 'text-purple-500'}`}>Lists</span>
+              </div>
+            </Card>
+          </Link>
+          <Link href="/dashboard/test">
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/test' ? 'bg-amber-50 border-amber-200' : 'hover:bg-amber-50'}`}>
+              <div className="flex flex-col items-center gap-2">
+                <FileText className={`w-6 h-6 ${pathname === '/dashboard/test' ? 'text-amber-600' : 'text-amber-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/test' ? 'text-amber-600' : 'text-amber-500'}`}>Test</span>
+              </div>
+            </Card>
+          </Link>
+        </div>
+      </div>
+
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
         <h1 className="text-3xl font-bold text-white mb-2">Welcome Back!</h1>

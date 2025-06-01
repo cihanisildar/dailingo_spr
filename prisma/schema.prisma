@@ -59,6 +59,7 @@ model User {
   currentStreak Int         @default(0)
   longestStreak Int         @default(0)
   streakUpdatedAt DateTime  @default(now())
+  reviewSessions ReviewSession[]
 }
 
 model ReviewSchedule {
@@ -183,4 +184,15 @@ model Suggestion {
   id        String   @id @default(cuid())
   message   String
   createdAt DateTime @default(now())
+}
+
+model ReviewSession {
+  id           String   @id @default(uuid())
+  userId       String
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  isRepeat     Boolean  @default(false)
+  mode         String   // 'flashcard' or 'multiple-choice'
+  cards        Json     // Store card IDs or details for the session
+  user         User     @relation(fields: [userId], references: [id])
 }

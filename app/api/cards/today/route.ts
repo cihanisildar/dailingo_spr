@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { startOfDay, endOfDay, addDays, format } from 'date-fns';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Get the user's session
     const session = await getServerSession(authOptions);
@@ -111,10 +111,29 @@ export async function GET() {
       return false;
     });
 
+    // --- Repeat session support ---
+    // Parse repeat param
+    const { searchParams } = new URL(request.url);
+    const repeat = searchParams.get('repeat') === 'true';
+
+    // If repeat, use all due today (pending + reviewed), else only pending
+    let cardsToReturn = [];
+    if (repeat) {
+      // Combine and shuffle
+      cardsToReturn = [...todaysCards, ...reviewedTodayCards];
+      // Fisher-Yates shuffle
+      for (let i = cardsToReturn.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cardsToReturn[i], cardsToReturn[j]] = [cardsToReturn[j], cardsToReturn[i]];
+      }
+    } else {
+      cardsToReturn = todaysCards;
+    }
+
     console.log('Filtered today\'s cards:', {
-      totalCards: todaysCards.length,
-      cardIds: todaysCards.map(c => c.id),
-      cardStatuses: todaysCards.map(c => ({
+      totalCards: cardsToReturn.length,
+      cardIds: cardsToReturn.map(c => c.id),
+      cardStatuses: cardsToReturn.map(c => ({
         id: c.id,
         word: c.word,
         reviewStatus: c.reviewStatus,
@@ -125,14 +144,14 @@ export async function GET() {
     });
 
     // Group cards by their review step instead of interval
-    const groupedCards = todaysCards.reduce((acc, card) => {
+    const groupedCards = cardsToReturn.reduce((acc, card) => {
       const reviewStep = card.reviewStep < 0 ? 0 : card.reviewStep;
       if (!acc[reviewStep]) {
         acc[reviewStep] = [];
       }
       acc[reviewStep].push(card);
       return acc;
-    }, {} as Record<number, typeof todaysCards>);
+    }, {} as Record<number, typeof cardsToReturn>);
 
     // Group reviewed today cards by review step as well
     const groupedReviewedTodayCards = reviewedTodayCards.reduce((acc, card) => {
@@ -146,7 +165,7 @@ export async function GET() {
 
     return NextResponse.json({
       cards: groupedCards,
-      total: todaysCards.length,
+      total: cardsToReturn.length,
       reviewedTodayCards: groupedReviewedTodayCards,
       reviewedTodayTotal: reviewedTodayCards.length,
       schedule: user.reviewSchedule
