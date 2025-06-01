@@ -1,0 +1,39 @@
+# Development files
+.git
+.github
+.vscode
+*.log
+*.md
+!README.md
+
+# Test files
+__tests__
+*.test.*
+*.spec.*
+
+# Build artifacts
+.next
+out
+dist
+build
+
+# Dependencies
+node_modules
+
+# Environment files
+.env*
+!.env.example
+
+# Cache directories
+.cache
+.npm
+.yarn
+
+# IDE files
+.idea
+*.swp
+*.swo
+
+# Misc
+.DS_Store
+Thumbs.db 

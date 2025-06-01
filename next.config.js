@@ -29,6 +29,8 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
+  // Disable source maps in production
+  productionBrowserSourceMaps: false,
   // Add specific webpack configuration
   webpack: (config, { dev, isServer }) => {
     // Optimize for production
