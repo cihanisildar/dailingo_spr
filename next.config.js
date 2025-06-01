@@ -47,16 +47,16 @@ const nextConfig = {
           minChunks: 1,
           maxAsyncRequests: 30,
           maxInitialRequests: 30,
+          automaticNameDelimiter: '.',
           cacheGroups: {
-            defaultVendors: {
+            vendor: {
               test: /[\\/]node_modules[\\/]/,
               priority: -10,
               reuseExistingChunk: true,
-            },
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
+              name(module) {
+                const packageName = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/)[1];
+                return `vendor.${packageName.replace('@', '')}`;
+              },
             },
           },
         },
