@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
 import { addDays, format, isValid } from 'date-fns';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const userEmail = await getCurrentUser();

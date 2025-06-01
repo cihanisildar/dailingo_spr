@@ -7,7 +7,14 @@ const nextConfig = {
     domains: ['repeeker.com'],
   },
   // Ensure proper handling of app directory
-  output: 'standalone'
+  output: 'standalone',
+  // Optimize build process
+  swcMinify: true,
+  // Increase memory limit for build
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@prisma/client', 'date-fns', 'lucide-react'],
+  }
 };
 
 module.exports = nextConfig; 

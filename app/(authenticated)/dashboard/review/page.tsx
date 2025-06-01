@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { Button } from "@/components/ui/button";
 import { Card as CardUI } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
