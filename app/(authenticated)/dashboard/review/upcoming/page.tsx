@@ -67,14 +67,14 @@ export default function UpcomingReviewsPage() {
   }
 
   return (
-    <div className="">
+    <div className="space-y-8">
       {/* Header Card */}
-      <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-8 overflow-hidden">
+      <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
         <div className="p-4 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-white">Upcoming Reviews</h1>
-              <p className="text-blue-100 mt-2">Plan ahead with your review schedule</p>
+              <p className="text-blue-100 dark:text-blue-200 mt-2">Plan ahead with your review schedule</p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-full py-2.5 px-4 border border-white/20">
@@ -93,14 +93,14 @@ export default function UpcomingReviewsPage() {
                     Review Schedule
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto bg-white dark:bg-gray-900">
                   <DialogHeader>
-                    <DialogTitle>How Reviews Work</DialogTitle>
+                    <DialogTitle className="text-gray-900 dark:text-gray-100">How Reviews Work</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-medium text-gray-900">Spaced Repetition System</h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100">Spaced Repetition System</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         When you learn a new word, you'll review it multiple times with increasing intervals:
                       </p>
                     </div>
@@ -124,15 +124,15 @@ export default function UpcomingReviewsPage() {
                         };
 
                         return (
-                          <div key={interval} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-medium text-sm">
+                          <div key={interval} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-medium text-sm">
                               {index + 1}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 Review #{index + 1}: {getLabel(interval)}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {getDescription(interval, index)}
                               </p>
                             </div>
@@ -141,18 +141,18 @@ export default function UpcomingReviewsPage() {
                       })}
                     </div>
 
-                    <div className="border-t pt-3">
-                      <h3 className="font-medium text-gray-900 text-sm mb-2">Calendar Colors Explained</h3>
+                    <div className="border-t dark:border-gray-800 pt-3">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm mb-2">Calendar Colors Explained</h3>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <p className="text-xs text-gray-700">
+                        <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300">
                             <span className="font-medium">Scheduled Review:</span> Your next immediate review
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <p className="text-xs text-gray-700">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300">
                             <span className="font-medium">Potential Review:</span> Future reviews after completing earlier ones
                           </p>
                         </div>
@@ -167,11 +167,11 @@ export default function UpcomingReviewsPage() {
       </Card>
 
       {/* Calendar Section */}
-      <Card className="overflow-hidden shadow-xl border border-gray-200 rounded-2xl">
+      <Card className="overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800 rounded-2xl bg-white dark:bg-gray-900">
         <div className="p-2 sm:p-6">
           {/* Calendar Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 sm:mb-8 gap-2 sm:gap-0">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 px-2 sm:px-0">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 px-2 sm:px-0">
               {format(currentDate, "MMMM yyyy")}
             </h2>
             <div className="flex items-center gap-2 w-full sm:w-auto px-2 sm:px-0">
@@ -179,30 +179,30 @@ export default function UpcomingReviewsPage() {
                 variant="outline"
                 size="icon"
                 onClick={previousMonth}
-                className="h-10 w-10 sm:h-8 sm:w-8 rounded-full"
+                className="h-10 w-10 sm:h-8 sm:w-8 rounded-full border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4" />
+                <ChevronLeft className="h-5 w-5 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={nextMonth}
-                className="h-10 w-10 sm:h-8 sm:w-8 rounded-full"
+                className="h-10 w-10 sm:h-8 sm:w-8 rounded-full border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4" />
+                <ChevronRight className="h-5 w-5 sm:h-4 sm:w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             </div>
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 border border-gray-200 rounded-xl overflow-hidden text-xs sm:text-base bg-white shadow-inner">
+          <div className="grid grid-cols-7 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden text-xs sm:text-base bg-white dark:bg-gray-900 shadow-inner">
             {/* Week day headers */}
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
               <div
                 key={day}
                 className={cn(
-                  "bg-gray-50 py-2 sm:p-2 text-center border-b border-gray-200 font-medium text-gray-500 text-[11px] sm:text-xs md:text-sm",
-                  i !== 6 && "border-r border-gray-200"
+                  "bg-gray-50 dark:bg-gray-800 py-2 sm:p-2 text-center border-b border-gray-200 dark:border-gray-700 font-medium text-gray-500 dark:text-gray-400 text-[11px] sm:text-xs md:text-sm",
+                  i !== 6 && "border-r border-gray-200 dark:border-gray-700"
                 )}
               >
                 <span>{day}</span>
@@ -227,12 +227,12 @@ export default function UpcomingReviewsPage() {
                   key={day.toString()}
                   className={cn(
                     "min-h-[56px] sm:min-h-[80px] md:min-h-[100px] p-1.5 sm:p-3 transition-all duration-200 relative flex flex-col items-center justify-center group cursor-pointer",
-                    !isCurrentMonth && "bg-gray-50 cursor-default",
-                    isCompleted && "bg-green-500",
-                    !isCompleted && dayData?.total > 0 && "bg-blue-50",
+                    !isCurrentMonth && "bg-gray-50 dark:bg-gray-800/50 cursor-default",
+                    isCompleted && "bg-green-500 dark:bg-green-600",
+                    !isCompleted && dayData?.total > 0 && "bg-blue-50 dark:bg-blue-900/30",
                     // Grid frame lines
-                    !isLastCol && "border-r border-gray-200",
-                    !isLastRow && "border-b border-gray-200"
+                    !isLastCol && "border-r border-gray-200 dark:border-gray-700",
+                    !isLastRow && "border-b border-gray-200 dark:border-gray-700"
                   )}
                   onClick={() => dayData?.total > 0 ? setSelectedDay(dateStr) : undefined}
                   style={{ zIndex: isTodayDay ? 2 : 1 }}
@@ -241,24 +241,31 @@ export default function UpcomingReviewsPage() {
                   <span
                     className={cn(
                       "text-xs sm:text-base md:text-lg font-semibold transition-all mb-0.5 sm:mb-0",
-                      !isCurrentMonth && "text-gray-400",
-                      isTodayDay && !isCompleted && "text-blue-600",
+                      !isCurrentMonth && "text-gray-400 dark:text-gray-500",
+                      isTodayDay && !isCompleted && "text-blue-600 dark:text-blue-400",
                       isCompleted && "text-white"
                     )}
                   >
                     {format(day, "d")}
                   </span>
 
-                  {/* Only show the number of words to review, centered and bold */}
+                  {/* Review indicators */}
                   {dayData?.total > 0 && (
-                    <span
-                      className={cn(
-                        "mt-1 text-lg sm:text-xl font-bold",
-                        isCompleted ? "text-white" : "text-blue-600"
+                    <div className="flex flex-col items-center gap-1 mt-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                          {dayData.reviewed}/{dayData.total}
+                        </span>
+                      </div>
+                      {dayData.fromFailure > 0 && (
+                        <div className="flex items-center gap-1">
+                          <XCircle className="h-3 w-3 text-red-500 dark:text-red-400" />
+                          <span className="text-xs text-red-500 dark:text-red-400">
+                            {dayData.fromFailure}
+                          </span>
+                        </div>
                       )}
-                    >
-                      {dayData.total}
-                    </span>
+                    </div>
                   )}
                 </div>
               );

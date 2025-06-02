@@ -232,8 +232,8 @@ export default function AuthenticatedLayout({
               href={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 mb-0.5",
-                "hover:bg-gray-100/80",
-                isActive ? "bg-blue-50 text-blue-600" : "text-gray-600",
+                "hover:bg-gray-100/80 dark:hover:bg-gray-800",
+                isActive ? "bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-300",
                 !isMobile && isCollapsed && "justify-center px-2"
               )}
               onClick={(e) => {
@@ -250,7 +250,7 @@ export default function AuthenticatedLayout({
               <Icon
                 className={cn(
                   "h-4 w-4 flex-shrink-0",
-                  isActive && "text-blue-600"
+                  isActive && "text-blue-600 dark:text-blue-400"
                 )}
               />
               {(!isCollapsed || isMobile) && (
@@ -288,10 +288,10 @@ export default function AuthenticatedLayout({
                       href={child.href}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
-                        "hover:bg-gray-100/80",
+                        "hover:bg-gray-100/80 dark:hover:bg-gray-800",
                         isChildActive
-                          ? "bg-blue-50/50 text-blue-600"
-                          : "text-gray-600"
+                          ? "bg-blue-50/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                          : "text-gray-600 dark:text-gray-300"
                       )}
                       onClick={() => {
                         if (isMobile) {
@@ -302,7 +302,7 @@ export default function AuthenticatedLayout({
                       <ChildIcon
                         className={cn(
                           "h-4 w-4",
-                          isChildActive && "text-blue-600"
+                          isChildActive && "text-blue-600 dark:text-blue-400"
                         )}
                       />
                       <span className={isChildActive ? "font-medium" : ""}>
@@ -325,11 +325,11 @@ export default function AuthenticatedLayout({
         {/* Desktop Sidebar */}
         <aside
           className={cn(
-            "hidden md:flex flex-col transition-all duration-300 fixed top-0 left-0 h-screen bg-white border-r z-40",
+            "hidden md:flex flex-col transition-all duration-300 fixed top-0 left-0 h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 z-40",
             isCollapsed ? "w-16" : "w-64"
           )}
         >
-          <div className="flex h-16 items-center px-4 border-b">
+          <div className="flex h-16 items-center px-4 border-b dark:border-gray-800">
             <Link
               href="/"
               className={cn(
@@ -339,7 +339,7 @@ export default function AuthenticatedLayout({
             >
                 <Image src={Repeeker_logo} alt="logo" width={50} height={50} />
              
-              {!isCollapsed && <span className="text-gray-900">Repeeker</span>}
+              {!isCollapsed && <span className="text-gray-900 dark:text-gray-100">Repeeker</span>}
             </Link>
             <Button
               variant="ghost"
@@ -347,8 +347,8 @@ export default function AuthenticatedLayout({
               className={cn(
                 "absolute",
                 isCollapsed
-                  ? "-right-3 h-6 w-6 rounded-full bg-white border shadow-sm hover:bg-gray-50"
-                  : "right-2 h-8 w-8 hover:bg-gray-100/80"
+                  ? "-right-3 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                  : "right-2 h-8 w-8 hover:bg-gray-100/80 dark:hover:bg-gray-800"
               )}
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
@@ -363,24 +363,24 @@ export default function AuthenticatedLayout({
           {renderNavigation()}
 
           {/* User Profile Section */}
-          <div className={cn("border-t p-4", isCollapsed ? "px-2" : "px-4")}>
+          <div className={cn("border-t dark:border-gray-800 p-4", isCollapsed ? "px-2" : "px-4")}>
             <div
               className={cn(
                 "flex items-center gap-3",
                 isCollapsed && "justify-center"
               )}
             >
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-1 ring-gray-200">
-                <span className="text-sm font-medium text-blue-600">
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center ring-1 ring-gray-200 dark:ring-gray-700">
+                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                   {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </span>
               </div>
               {!isCollapsed && (
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">
+                  <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                     {session?.user?.name || "User"}
                   </p>
-                  <p className="truncate text-xs text-gray-500">
+                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">
                     {session?.user?.email || ""}
                   </p>
                 </div>
@@ -392,12 +392,12 @@ export default function AuthenticatedLayout({
         {/* Main content */}
         <main
           className={cn(
-            "flex-1 overflow-y-auto",
+            "flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950",
             isCollapsed ? "md:ml-16" : "md:ml-64"
           )}
         >
           {/* Header with Breadcrumb and Profile */}
-          <div className="h-16 border-b flex items-center px-4 md:px-8">
+          <div className="h-16 border-b dark:border-gray-800 flex items-center px-4 md:px-8 bg-white dark:bg-gray-900">
             {/* Mobile Menu Button */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -429,22 +429,22 @@ export default function AuthenticatedLayout({
 
             <div className="flex-1">
               {/* Breadcrumb */}
-              <nav className="flex items-center space-x-2 text-sm text-gray-500 overflow-x-auto">
+              <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 overflow-x-auto">
                 {breadcrumbs.map((crumb, index) => (
                   <div
                     key={crumb.href}
                     className="flex items-center whitespace-nowrap"
                   >
                     {index > 0 && (
-                      <ChevronRightIcon className="h-4 w-4 mx-2 text-gray-400 flex-shrink-0" />
+                      <ChevronRightIcon className="h-4 w-4 mx-2 text-gray-400 dark:text-gray-500 flex-shrink-0" />
                     )}
                     <Link
                       href={crumb.href}
                       className={cn(
-                        "hover:text-primary transition-colors",
+                        "hover:text-primary dark:hover:text-blue-400 transition-colors",
                         index === breadcrumbs.length - 1
-                          ? "text-gray-900 font-medium"
-                          : ""
+                          ? "text-gray-900 dark:text-gray-100 font-medium"
+                          : "text-gray-500 dark:text-gray-400"
                       )}
                     >
                       {crumb.label}
@@ -472,8 +472,8 @@ export default function AuthenticatedLayout({
                     size="icon"
                     className="h-8 w-8 rounded-full"
                   >
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                         {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                       </span>
                     </div>

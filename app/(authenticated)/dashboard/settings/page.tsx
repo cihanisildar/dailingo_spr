@@ -28,12 +28,15 @@ import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import api from "@/lib/axios";
+import { useTheme } from "next-themes";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -78,35 +81,35 @@ export default function SettingsPage() {
 
       <div className="grid gap-6">
         {/* Appearance Settings */}
-        <Card className="p-8 shadow-lg border-t-4 border-t-blue-500">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900">
-            <Sun className="w-5 h-5 text-blue-500" />
+        <Card className="p-8 shadow-lg border-t-4 border-t-blue-500 dark:border-t-blue-400">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <Sun className="w-5 h-5 text-blue-500 dark:text-blue-400" />
             Appearance
           </h2>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base">Dark Mode</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base dark:text-gray-100">Theme</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Switch between light and dark theme
                 </p>
               </div>
-              <Switch />
+              <ThemeToggle />
             </div>
           </div>
         </Card>
 
         {/* Notification Settings */}
-        <Card className="p-8 shadow-lg border-t-4 border-t-indigo-500">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900">
-            <Bell className="w-5 h-5 text-indigo-500" />
+        <Card className="p-8 shadow-lg border-t-4 border-t-indigo-500 dark:border-t-indigo-400">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <Bell className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
             Notifications
           </h2>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base">Email Notifications</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base dark:text-gray-100">Email Notifications</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Receive email notifications for important updates
                 </p>
               </div>
@@ -114,8 +117,8 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base">Review Reminders</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base dark:text-gray-100">Review Reminders</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Get reminded when it's time to review your cards
                 </p>
               </div>
@@ -125,16 +128,16 @@ export default function SettingsPage() {
         </Card>
 
         {/* Privacy Settings */}
-        <Card className="p-8 shadow-lg border-t-4 border-t-purple-500">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900">
-            <Shield className="w-5 h-5 text-purple-500" />
+        <Card className="p-8 shadow-lg border-t-4 border-t-purple-500 dark:border-t-purple-400">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <Shield className="w-5 h-5 text-purple-500 dark:text-purple-400" />
             Privacy
           </h2>
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base">Public Profile</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base dark:text-gray-100">Public Profile</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Allow others to see your profile and progress
                 </p>
               </div>
@@ -142,8 +145,8 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base">Share Statistics</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base dark:text-gray-100">Share Statistics</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Share your learning statistics publicly
                 </p>
               </div>
@@ -153,16 +156,16 @@ export default function SettingsPage() {
         </Card>
 
         {/* Danger Zone */}
-        <Card className="p-8 shadow-lg border-t-4 border-t-red-500">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900">
-            <AlertCircle className="w-5 h-5 text-red-500" />
+        <Card className="p-8 shadow-lg border-t-4 border-t-red-500 dark:border-t-red-400">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
             Danger Zone
           </h2>
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="space-y-0.5">
-                <Label className="text-base text-red-600">Delete Account</Label>
-                <p className="text-sm text-gray-500">
+                <Label className="text-base text-red-600 dark:text-red-400">Delete Account</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Permanently delete your account and all associated data
                 </p>
               </div>
@@ -184,13 +187,13 @@ export default function SettingsPage() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-600 flex items-center gap-2">
+            <DialogTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
               Delete Account
             </DialogTitle>
             <DialogDescription className="space-y-3">
               <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-              <div className="bg-red-50 text-red-900 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-200 px-4 py-3 rounded-lg text-sm">
                 <p className="font-medium">The following data will be permanently deleted:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Your profile information</li>

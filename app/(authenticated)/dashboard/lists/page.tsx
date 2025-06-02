@@ -28,8 +28,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { SearchInput } from "@/components/ui/search-input";
 
 export default function WordListsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
   const { data: lists, isLoading } = useQuery({
     queryKey: ["wordLists"],
     queryFn: async () => {
@@ -40,12 +42,29 @@ export default function WordListsPage() {
 
   if (isLoading) return <WordListsSkeleton />;
 
+  const filteredLists = lists?.filter(list => 
+    list.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    list.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-purple-600 to-rose-500 rounded-3xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Word Lists</h1>
-        <p className="text-purple-100">Create and manage your vocabulary lists.</p>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Word Lists</h1>
+            <p className="text-purple-100">Create and manage your vocabulary lists.</p>
+          </div>
+          <div className="w-full">
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search lists..."
+              className="w-full bg-white/80 text-gray-800 placeholder:text-gray-500 border-none rounded-full [&>svg]:text-gray-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Lists Grid */}
@@ -54,7 +73,7 @@ export default function WordListsPage() {
         <CreateListDialog />
 
         {/* Lists */}
-        {lists?.map((list) => (
+        {filteredLists?.map((list) => (
           <Link key={list.id} href={`/dashboard/lists/${list.id}`}>
             <Card className="h-full hover:shadow-lg transition-all group border-transparent hover:border-purple-200">
               <div className="p-6 flex flex-col h-full">

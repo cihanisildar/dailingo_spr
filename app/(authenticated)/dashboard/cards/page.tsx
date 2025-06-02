@@ -34,6 +34,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ImportCardsDialog } from "@/components/cards/ImportCardsDialog";
 
 export default function CardsPage() {
   const router = useRouter();
@@ -190,61 +191,23 @@ export default function CardsPage() {
   return (
     <div className="space-y-6">
       {/* Header with Title and Add Button */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-4 sm:p-8">
+      <div className="bg-gradient-to-r from-[#6366f1] to-[#ec4899] rounded-3xl p-4 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">My Cards</h1>
-            <p className="text-purple-100 mt-1 text-sm sm:text-base">Manage and organize your vocabulary cards.</p>
+            <p className="text-white/80 mt-1 text-sm sm:text-base">Manage and organize your vocabulary cards.</p>
           </div>
           <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white" 
-                  size="lg"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Card
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Card</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Word</label>
-                    <Input 
-                      placeholder="Enter word" 
-                      value={newWord}
-                      onChange={(e) => setNewWord(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Definition</label>
-                    <Input 
-                      placeholder="Enter definition"
-                      value={newDefinition}
-                      onChange={(e) => setNewDefinition(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter className="mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateCard}
-                    disabled={!newWord.trim() || !newDefinition.trim() || isPending}
-                  >
-                    {isPending ? "Creating..." : "Create Card"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <ImportCardsDialog 
+              onImportComplete={() => { router.refresh(); }} 
+              className="bg-[#6366f1] text-white hover:bg-[#4f46e5] sm:mr-2 mb-2 sm:mb-0" 
+            />
+            <Button 
+              onClick={() => setIsDialogOpen(true)} 
+              className="bg-[#6366f1] text-white hover:bg-[#4f46e5]"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Add Card
+            </Button>
           </div>
         </div>
         {/* Search bar always visible */}

@@ -27,6 +27,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { toast } from "react-hot-toast";
 import Confetti from 'react-confetti';
+import { Label } from "@/components/ui/label";
 
 interface Word {
   id: string;
@@ -44,6 +45,8 @@ interface TestResult {
   timeSpent: number;
 }
 
+type StudyMode = "multiple-choice" | "flashcards";
+type TestMode = "all" | "today";
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -60,8 +63,8 @@ export default function TestPage() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const [testMode, setTestMode] = useState<"all" | "today">("all");
-  const [studyMode, setStudyMode] = useState<"multiple-choice" | "flashcards">("multiple-choice");
+  const [testMode, setTestMode] = useState<TestMode>("all");
+  const [studyMode, setStudyMode] = useState<StudyMode>("multiple-choice");
   const [isTestStarted, setIsTestStarted] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [startTime, setStartTime] = useState<number>(0);
@@ -93,6 +96,9 @@ export default function TestPage() {
     width: typeof window !== 'undefined' ? window.innerWidth : 0,
     height: typeof window !== 'undefined' ? window.innerHeight : 0,
   });
+
+  const isMultipleChoice = studyMode === "multiple-choice";
+  const isFlashcards = studyMode === "flashcards";
 
   useLayoutEffect(() => {
     if (wordRef.current) {
@@ -575,239 +581,188 @@ export default function TestPage() {
 
   if (!isTestStarted) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
+      <div className="space-y-8">
+        {/* Header Card */}
+        <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">Word Test</h1>
-                <p className="text-blue-100 mt-2">
-                  Test your knowledge and track your progress
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 w-full sm:w-auto">
-                  <div className="flex items-center gap-3">
-                    <BookOpen className="h-5 w-5 text-white" />
-                    <div>
-                      <p className="text-sm text-blue-100">Available Words</p>
-                      {isLoading ? (
-                        <div className="h-8 flex items-center">
-                          <p className="text-sm text-white/70">Loading...</p>
-                        </div>
-                      ) : (
-                        <p className="text-2xl font-bold text-white">{allWords.length}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
+                <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
               </div>
             </div>
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden border-none shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
               <div className="p-4 sm:p-6 space-y-6">
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
+                </div>
+
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">Study Mode</label>
-                    <Select 
-                      value={studyMode} 
-                      onValueChange={(value: "multiple-choice" | "flashcards") => setStudyMode(value)}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="w-full bg-white border border-gray-200 h-11 px-3 rounded-lg text-sm">
-                        <SelectValue placeholder="Select study mode" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border rounded-lg shadow-lg">
-                        <SelectItem 
-                          value="multiple-choice"
-                          className="text-sm py-2.5 px-3 focus:bg-blue-50 focus:text-blue-600 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <GraduationCap className="h-4 w-4" />
-                            <span>Multiple Choice Test</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem 
-                          value="flashcards"
-                          className="text-sm py-2.5 px-3 focus:bg-blue-50 focus:text-blue-600 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            <span>Flashcards</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <Button
+                        variant={testMode === "all" ? "default" : "outline"}
+                        onClick={() => setTestMode("all")}
+                        className={cn(
+                          "w-full",
+                          testMode === "all" 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        All Words
+                      </Button>
+                      <Button
+                        variant={testMode === "today" ? "default" : "outline"}
+                        onClick={() => setTestMode("today")}
+                        className={cn(
+                          "w-full",
+                          testMode === "today" 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Today's Words
+                      </Button>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">Test Mode</label>
-                    <Select 
-                      value={testMode} 
-                      onValueChange={(value: "all" | "today") => setTestMode(value)}
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className="w-full bg-white border border-gray-200 h-11 px-3 rounded-lg text-sm">
-                        <SelectValue placeholder="Select test mode" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border rounded-lg shadow-lg">
-                        <SelectItem 
-                          value="today" 
-                          disabled={isLoading || (studyMode === "multiple-choice" && !isTodayWordsLoading && todayWords.length < 4)}
-                          className="text-sm py-2.5 px-3 focus:bg-blue-50 focus:text-blue-600 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              Today's Words 
-                              {!isLoading && todayWords.length === 0 && " (No words added today)"}
-                              {!isLoading && studyMode === "multiple-choice" && todayWords.length > 0 && todayWords.length < 4 && " (Need at least 4 cards)"}
-                            </span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem 
-                          value="all"
-                          disabled={isLoading || (studyMode === "multiple-choice" && !isAllWordsLoading && allWords.length < 4)}
-                          className="text-sm py-2.5 px-3 focus:bg-blue-50 focus:text-blue-600 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="h-4 w-4" />
-                            <span>
-                              All Words
-                              {!isLoading && studyMode === "multiple-choice" && allWords.length < 4 && " (Need at least 4 cards)"}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <Button
+                        variant={isMultipleChoice ? "default" : "outline"}
+                        onClick={() => setStudyMode("multiple-choice" as StudyMode)}
+                        className={cn(
+                          "w-full",
+                          isMultipleChoice 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Multiple Choice
+                      </Button>
+                      <Button
+                        variant={isFlashcards ? "default" : "outline"}
+                        onClick={() => setStudyMode("flashcards" as StudyMode)}
+                        className={cn(
+                          "w-full",
+                          isFlashcards 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Flashcards
+                      </Button>
+                    </div>
                   </div>
 
-                  {studyMode === "multiple-choice" && (
+                  {isMultipleChoice && (
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                        Number of Questions {!isLoading && <span className="text-gray-500">({allWords.length} available)</span>}
-                      </label>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        <Input
-                          type="number"
-                          min={1}
-                          max={allWords.length}
-                          value={questionAmount}
-                          onChange={handleQuestionAmountChange}
-                          onBlur={() => {
-                            if (questionAmount < 1) {
-                              setQuestionAmount(1);
-                            }
-                          }}
-                          className="w-full sm:max-w-[200px]"
-                          disabled={isLoading}
-                        />
-                        {isLoading ? (
-                          <div className="h-8 flex items-center">
-                            <p className="text-sm text-gray-500">Loading available words...</p>
-                          </div>
-                        ) : allWords.length > 0 ? (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <div className="h-1 w-1 rounded-full bg-gray-400"></div>
-                            <p>Questions will be randomly selected from your word collection</p>
-                          </div>
-                        ) : null}
-                      </div>
+                      <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Number of Questions
+                      </Label>
+                      <Input
+                        id="questionAmount"
+                        type="number"
+                        min="1"
+                        max={allWords.length}
+                        value={questionAmount}
+                        onChange={handleQuestionAmountChange}
+                        className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      />
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Available words: {allWords.length}
+                      </p>
                     </div>
                   )}
                 </div>
 
-                {!isLoading && testMode === "today" && todayWords.length === 0 && (
-                  <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
+                {!hasWords && (
+                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      No words have been added today. Please add some words or select "All Words" mode.
+                      No words available for testing. Add some words first.
                     </AlertDescription>
                   </Alert>
                 )}
 
-                {!isLoading && studyMode === "multiple-choice" && !hasEnoughWordsForMultipleChoice && (
-                  <Alert variant="destructive" className="bg-red-50 text-red-800 border-red-200">
+                {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
+                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      You need at least 4 cards to start a multiple choice test. Please add more cards to your collection.
+                      You need at least 4 words for multiple choice questions.
                     </AlertDescription>
                   </Alert>
                 )}
 
-                <Button 
-                  onClick={startTest} 
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                  disabled={
-                    isLoading ||
-                    !hasWords ||
-                    (studyMode === "multiple-choice" && !hasEnoughWordsForMultipleChoice)
-                  }
+                <Button
+                  onClick={startTest}
+                  disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
+                  className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
                 >
-                  <div className="flex items-center gap-2 justify-center">
-                    {isLoading ? (
-                      <span>Loading...</span>
-                    ) : (
-                      <>
-                        {studyMode === "multiple-choice" ? (
-                          <GraduationCap className="h-5 w-5" />
-                        ) : (
-                          <BookOpen className="h-5 w-5" />
-                        )}
-                        <span>Start {studyMode === "multiple-choice" ? "Test" : "Studying"}</span>
-                      </>
-                    )}
-                  </div>
+                  Start Test
                 </Button>
               </div>
             </Card>
           </div>
 
-          <div className="space-y-4">
-            <Card className="overflow-hidden border-none shadow-sm bg-blue-50/50">
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
               <div className="p-4 sm:p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <HelpCircle className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-medium text-blue-900">About {studyMode === "multiple-choice" ? "Testing" : "Flashcards"}</h3>
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
                 </div>
-                <p className="text-sm text-blue-700 leading-relaxed">
-                  {studyMode === "multiple-choice" ? (
-                    "Test your knowledge of words through multiple-choice questions. Choose between testing today's words or your entire collection. Track your progress and see detailed results after completion."
-                  ) : (
-                    "Study your words using interactive flashcards. Click on a card to reveal its definition. This is a great way to quickly review your vocabulary without the pressure of being tested."
-                  )}
-                </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
+                    <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
+                      {testMode === "today" ? todayWords.length : allWords.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
+                    <p className="text-blue-900 dark:text-blue-100">
+                      {testMode === "today" ? "Today's Words" : "All Words"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
+                    <p className="text-blue-900 dark:text-blue-100">
+                      {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </Card>
 
-            {testResults.length > 0 && studyMode === "multiple-choice" && (
-              <Card className="overflow-hidden border-none shadow-sm">
-                <div className="p-4 sm:p-6">
-                  <h3 className="font-medium text-gray-900 mb-4">Previous Results</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Correct Answers</span>
-                      <span className="text-sm font-medium text-green-600">
-                        {testResults.filter(r => r.isCorrect).length} / {testResults.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Average Time</span>
-                      <span className="text-sm font-medium">
-                        {formatTime(testResults.reduce((acc, curr) => acc + curr.timeSpent, 0) / testResults.length)}
-                      </span>
-                    </div>
+            <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                    <HelpCircle className="h-5 w-5" />
                   </div>
+                  <h3 className="font-medium">About Testing</h3>
                 </div>
-              </Card>
-            )}
+                <p className="text-blue-50 text-sm leading-relaxed">
+                  Testing yourself is one of the most effective ways to learn. Choose between multiple
+                  choice questions or flashcards to test your knowledge. Multiple choice questions help
+                  you distinguish between similar words, while flashcards are great for quick recall.
+                </p>
+              </div>
+            </Card>
           </div>
         </div>
       </div>
@@ -1150,133 +1105,307 @@ export default function TestPage() {
   }
 
   return (
-    <>
-      <div className="max-w-7xl mx-auto space-y-6">
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">Testing Words</h1>
-                <p className="text-blue-100 mt-2">
-                  {testMode === "today" ? "Today's" : "All"} words test in progress
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-white" />
-                    <span className="font-medium text-white">{formatTime(elapsedTime)}</span>
-                  </div>
+    <div className="space-y-8">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
+              <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {!isTestStarted ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+              <div className="p-4 sm:p-6 space-y-6">
+                <div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-white" />
-                    <span className="font-medium text-white">
-                      {currentWordIndex + 1} of {words.length}
-                    </span>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <Button
+                        variant={testMode === "all" ? "default" : "outline"}
+                        onClick={() => setTestMode("all")}
+                        className={cn(
+                          "w-full",
+                          testMode === "all" 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        All Words
+                      </Button>
+                      <Button
+                        variant={testMode === "today" ? "default" : "outline"}
+                        onClick={() => setTestMode("today")}
+                        className={cn(
+                          "w-full",
+                          testMode === "today" 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Today's Words
+                      </Button>
+                    </div>
                   </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
+                    <div className="grid grid-cols-2 gap-4 mt-2">
+                      <Button
+                        variant={isMultipleChoice ? "default" : "outline"}
+                        onClick={() => setStudyMode("multiple-choice" as StudyMode)}
+                        className={cn(
+                          "w-full",
+                          isMultipleChoice 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Multiple Choice
+                      </Button>
+                      <Button
+                        variant={isFlashcards ? "default" : "outline"}
+                        onClick={() => setStudyMode("flashcards" as StudyMode)}
+                        className={cn(
+                          "w-full",
+                          isFlashcards 
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        Flashcards
+                      </Button>
+                    </div>
+                  </div>
+
+                  {isMultipleChoice && (
+                    <div>
+                      <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Number of Questions
+                      </Label>
+                      <Input
+                        id="questionAmount"
+                        type="number"
+                        min="1"
+                        max={allWords.length}
+                        value={questionAmount}
+                        onChange={handleQuestionAmountChange}
+                        className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      />
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Available words: {allWords.length}
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {!hasWords && (
+                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      No words available for testing. Add some words first.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
+                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      You need at least 4 words for multiple choice questions.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <Button
-                  variant="ghost"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                  onClick={handleExit}
+                  onClick={startTest}
+                  disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
+                  className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
                 >
-                  Exit Test
+                  Start Test
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
-        </Card>
 
-        <Card className="overflow-hidden border-none shadow-sm">
-          <div className="p-4 sm:p-8">
-            <div className="text-center space-y-6 sm:space-y-8">
-              <div className="py-6 sm:py-8">
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">{words[currentWordIndex]?.word}</h2>
-                {words[currentWordIndex]?.wordList && (
-                  <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm">
-                    {words[currentWordIndex].wordList.name}
-                  </span>
-                )}
-                <p className="text-sm text-gray-500 mt-4">Choose the correct definition</p>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
+                    <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
+                      {testMode === "today" ? todayWords.length : allWords.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
+                    <p className="text-blue-900 dark:text-blue-100">
+                      {testMode === "today" ? "Today's Words" : "All Words"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
+                    <p className="text-blue-900 dark:text-blue-100">
+                      {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
+                    </p>
+                  </div>
+                </div>
               </div>
+            </Card>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
-                {options.map((option, index) => (
+            <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                    <HelpCircle className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-medium">About Testing</h3>
+                </div>
+                <p className="text-blue-50 text-sm leading-relaxed">
+                  Testing yourself is one of the most effective ways to learn. Choose between multiple
+                  choice questions or flashcards to test your knowledge. Multiple choice questions help
+                  you distinguish between similar words, while flashcards are great for quick recall.
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-6 overflow-hidden">
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white">Testing Words</h1>
+                  <p className="text-blue-100 dark:text-blue-200 mt-2">
+                    {testMode === "today" ? "Today's" : "All"} words test in progress
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-white" />
+                      <span className="font-medium text-white">{formatTime(elapsedTime)}</span>
+                    </div>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-white" />
+                      <span className="font-medium text-white">
+                        {currentWordIndex + 1} of {words.length}
+                      </span>
+                    </div>
+                  </div>
                   <Button
-                    key={index}
-                    variant="outline"
-                    size="lg"
-                    className={cn(
-                      "py-6 sm:py-8 text-base sm:text-lg transition-all duration-200 relative text-left sm:text-center",
-                      showFeedback
-                        ? option === lastAnswer?.correct
-                          ? "bg-green-50 border-green-200 text-green-600"
-                          : option === lastAnswer?.selected && !lastAnswer?.isCorrect
-                          ? "bg-red-50 border-red-200 text-red-600"
-                          : "opacity-50"
-                        : "hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
-                    )}
-                    onClick={() => !showFeedback && handleResponse(option)}
-                    disabled={showFeedback}
+                    variant="ghost"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={handleExit}
                   >
-                    {option}
-                    {showFeedback && option === lastAnswer?.correct && (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 absolute right-3" />
-                    )}
-                    {showFeedback && option === lastAnswer?.selected && !lastAnswer?.isCorrect && (
-                      <XCircle className="h-5 w-5 text-red-500 absolute right-3" />
-                    )}
+                    Exit Test
                   </Button>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
 
-      <Dialog 
-        open={showExitDialog} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowExitDialog(false);
-            setPendingNavigation(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
+          <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+            <div className="p-4 sm:p-8">
+              <div className="text-center space-y-6 sm:space-y-8">
+                <div className="py-6 sm:py-8">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                    {words[currentWordIndex]?.word}
+                  </h2>
+                  {words[currentWordIndex]?.wordList && (
+                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
+                      {words[currentWordIndex].wordList.name}
+                    </span>
+                  )}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Choose the correct definition</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
+                  {options.map((option, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="lg"
+                      className={cn(
+                        "py-6 sm:py-8 text-base sm:text-lg transition-all duration-200 relative text-left sm:text-center",
+                        showFeedback
+                          ? option === lastAnswer?.correct
+                            ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400"
+                            : option === lastAnswer?.selected && !lastAnswer?.isCorrect
+                            ? "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
+                            : "opacity-50"
+                          : "hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
+                      )}
+                      onClick={() => !showFeedback && handleResponse(option)}
+                      disabled={showFeedback}
+                    >
+                      {option}
+                      {showFeedback && option === lastAnswer?.correct && (
+                        <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 absolute right-3" />
+                      )}
+                      {showFeedback && option === lastAnswer?.selected && !lastAnswer?.isCorrect && (
+                        <XCircle className="h-5 w-5 text-red-500 dark:text-red-400 absolute right-3" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Exit Dialog */}
+      <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <DialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle>Exit Study Session?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to exit? Your progress will not be saved.
+            <DialogTitle className="text-gray-900 dark:text-gray-100">Exit Test?</DialogTitle>
+            <DialogDescription className="text-gray-500 dark:text-gray-400">
+              Your progress will be lost if you exit now. Are you sure you want to continue?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowExitDialog(false);
-                setPendingNavigation(null);
-              }}
-              className="w-full sm:w-auto"
+              onClick={() => setShowExitDialog(false)}
+              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             >
-              Continue Studying
+              Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                setIsTestStarted(false);
-                setShowExitDialog(false);
-                router.push('/dashboard/test');
-              }}
-              className="w-full sm:w-auto"
+              onClick={confirmExit}
+              className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800"
             >
-              Exit
+              Exit Test
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 

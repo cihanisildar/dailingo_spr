@@ -12,6 +12,7 @@ import { useEffect, useState, useRef } from "react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/useWindowSize";
 import { FlashcardReview } from "./FlashcardReview";
+import { cn } from "@/lib/utils";
 
 interface Word {
   id: string;
@@ -25,10 +26,12 @@ interface Review {
   createdAt: string;
 }
 
-type CardWithReviews = Card & { reviews?: Review[] };
+interface CardWithReviews extends Card {
+  options?: string[];
+}
 
 interface ReviewCardsProps {
-  initialMode?: 'multiple-choice' | 'flashcard';
+  initialMode?: "multiple-choice" | "flashcards";
   initialCount?: number;
   initialRepeat?: boolean;
 }
@@ -44,7 +47,7 @@ interface SessionState {
   correctAnswers: number;
 }
 
-export default function ReviewCards({ initialMode = 'multiple-choice', initialCount, initialRepeat = false }: ReviewCardsProps) {
+export default function ReviewCards({ initialMode = "multiple-choice", initialCount, initialRepeat = false }: ReviewCardsProps) {
   const router = useRouter();
   const { width, height } = useWindowSize();
   const [repeat, setRepeat] = useState(initialRepeat);
@@ -64,23 +67,15 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
   const allCards = Object.values(cardsData?.cards || {}).flat() as CardWithReviews[];
   const total = cardsData?.total || 0;
 
-  const [session, setSession] = useState<SessionState>({
-    cards: [],
-    currentIndex: 0,
-    showAnswer: false,
-    options: [],
-    selectedAnswer: null,
-    isComplete: false,
-    showConfetti: false,
-    correctAnswers: 0
-  });
-
-  // Add isFlipping state at the top level
-  const [isFlipping, setIsFlipping] = useState(false);
+  const [sessionCards, setSessionCards] = useState<CardWithReviews[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Add loading state for options
-  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [reviewMode, setReviewMode] = useState<"multiple-choice" | "flashcards">(initialMode);
+  const [isRepeat, setIsRepeat] = useState(initialRepeat);
 
   // Add showWordModal state
   const [showWordModal, setShowWordModal] = useState(false);
@@ -92,135 +87,109 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
   // Initialize session cards
   useEffect(() => {
     console.log('All cards for today:', allCards);
-    if (allCards.length > 0 && session.cards.length === 0) {
+    if (allCards.length > 0 && sessionCards.length === 0) {
       const count = initialCount || total;
       // Use allCards directly, since backend already filters out reviewed cards
       const shuffledCards = allCards
         .sort(() => Math.random() - 0.5)
         .slice(0, Math.min(count, allCards.length));
-      setSession(prev => {
-        const newSession = { ...prev, cards: shuffledCards };
-        console.log('Session cards after init:', newSession.cards);
-        return newSession;
-      });
+      setSessionCards(shuffledCards);
     }
-  }, [allCards, initialCount, total, session.cards.length]);
+  }, [allCards, initialCount, total, sessionCards.length]);
 
   // Generate options when currentCard changes
   useEffect(() => {
-    const currentCard = session.cards[session.currentIndex];
-    if (!currentCard || !allWords.length || session.showAnswer || session.options.length > 0) return;
+    const currentCard = sessionCards[currentIndex];
+    if (!currentCard || !allWords.length || !selectedAnswer) return;
 
-    setOptionsLoading(true);
+    setIsSubmitting(true);
     const correctAnswer = currentCard.definition;
     if (!correctAnswer) {
-      setOptionsLoading(false);
+      setIsSubmitting(false);
       return;
     }
 
-    // Get all definitions except the correct one
-    const otherDefinitions = allWords
-      .filter((w: Word) => w.definition !== correctAnswer)
-      .map((w: Word) => w.definition)
-      .filter((def: string) => def && def.trim() !== '');
-
-    let wrongAnswers: string[] = [];
-    if (otherDefinitions.length >= 3) {
-      wrongAnswers = otherDefinitions
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
-    } else {
-      wrongAnswers = [...otherDefinitions];
-      while (wrongAnswers.length < 3) {
-        wrongAnswers.push(...otherDefinitions);
-      }
-      wrongAnswers = wrongAnswers.slice(0, 3);
-    }
+    // Generate wrong answers
+    const wrongAnswers = allWords
+      .filter((word: Word) => word.definition !== correctAnswer)
+      .map((word: Word) => word.definition)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
 
     const allOptions = [...wrongAnswers, correctAnswer];
     const shuffledOptions = allOptions.sort(() => Math.random() - 0.5);
-    setSession(prev => ({ ...prev, options: shuffledOptions }));
-    setOptionsLoading(false);
-  }, [session.currentIndex, session.cards, allWords, session.showAnswer, session.options.length]);
+    setSessionCards(prev => prev.map((card, index) =>
+      index === currentIndex ? { ...card, options: shuffledOptions } : card
+    ));
+    setIsSubmitting(false);
+  }, [currentIndex, sessionCards, allWords, selectedAnswer]);
 
-  const handleOptionSelect = (option: string) => {
-    if (session.showAnswer || session.selectedAnswer) return;
+  const handleAnswerSelect = (option: string) => {
+    if (selectedAnswer) return;
     
-    const currentCard = session.cards[session.currentIndex];
+    const currentCard = sessionCards[currentIndex];
     if (!currentCard) return;
     
     const isSuccess = option === currentCard.definition;
-    setSession(prev => ({ 
-      ...prev, 
-      selectedAnswer: option, 
-      showAnswer: true,
-      correctAnswers: isSuccess ? prev.correctAnswers + 1 : prev.correctAnswers
-    }));
+    setSelectedAnswer(option);
     
     updateReview(
       { cardId: currentCard.id, isSuccess },
       {
         onSuccess: () => {
-          if (session.currentIndex === session.cards.length - 1) {
+          if (currentIndex === sessionCards.length - 1) {
             updateStreak();
-            // Instead of marking as complete, just show the completion screen
-            setSession(prev => ({ ...prev, showConfetti: true }));
+            setIsComplete(true);
+            setCorrectAnswers(correctAnswers + 1);
+          } else {
+            setCurrentIndex(currentIndex + 1);
+            setSelectedAnswer(null);
           }
         }
       }
     );
   };
 
-  const handleFlashcardResponse = (knewIt: boolean) => {
-    if (!currentCard) return;
+  const handleResponse = (knewIt: boolean) => {
+    if (!sessionCards[currentIndex]) return;
     // Optimistically update UI
-    if (session.currentIndex === session.cards.length - 1) {
-      setSession(prev => ({
-        ...prev,
-        showConfetti: true,
-        correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-      }));
-      updateStreak();
+    if (currentIndex === sessionCards.length - 1) {
+      setIsComplete(true);
+      setCorrectAnswers(correctAnswers + 1);
     } else {
-      setSession(prev => ({
-        ...prev,
-        currentIndex: prev.currentIndex + 1,
-        correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-      }));
+      setCurrentIndex(currentIndex + 1);
     }
     setIsFlipping(false);
     setIsSubmitting(false);
     // Fire mutation in background
-    updateReview({ cardId: currentCard.id, isSuccess: knewIt });
+    updateReview({ cardId: sessionCards[currentIndex].id, isSuccess: knewIt });
   };
 
-  const handleNext = () => {
-    if (!session.showAnswer) return;
-    
-    if (session.currentIndex < session.cards.length - 1) {
-      setSession(prev => ({ 
-        ...prev,
-        currentIndex: prev.currentIndex + 1,
-        showAnswer: false,
-        selectedAnswer: null,
-        options: []
-      }));
-    }
+  const handleResponseWithFlip = (knewIt: boolean) => {
+    if (isFlipping || isSubmitting) return;
+    setIsFlipping(true);
+    setIsSubmitting(true);
+    updateReview(
+      { cardId: sessionCards[currentIndex].id, isSuccess: knewIt },
+      {
+        onSuccess: () => {
+          if (currentIndex === sessionCards.length - 1) {
+            updateStreak();
+            setIsComplete(true);
+            setCorrectAnswers(correctAnswers + 1);
+          } else {
+            setCurrentIndex(currentIndex + 1);
+          }
+        },
+        onSettled: () => {
+          setTimeout(() => {
+            setIsFlipping(false);
+            setIsSubmitting(false);
+          }, 350);
+        }
+      }
+    );
   };
-
-  const handlePrevious = () => {
-    if (session.currentIndex > 0) {
-      setSession(prev => ({ 
-        ...prev,
-        currentIndex: prev.currentIndex - 1,
-        showAnswer: false,
-        selectedAnswer: null,
-        options: []
-      }));
-    }
-  };
-
-  const currentCard = session.cards[session.currentIndex];
 
   // When repeat changes, refetch
   useEffect(() => {
@@ -251,14 +220,14 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
 
   // Complete review session when finished
   useEffect(() => {
-    if (session.isComplete && sessionId) {
+    if (isComplete && sessionId) {
       fetch('/api/review-session', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId })
       });
     }
-  }, [session.isComplete, sessionId]);
+  }, [isComplete, sessionId]);
 
   // Show loading spinner if cards are loading
   if (isCardsLoading || !cardsData) {
@@ -270,11 +239,11 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
     );
   }
 
-  if (session.isComplete) {
-    const accuracy = Math.round((session.correctAnswers / session.cards.length) * 100);
+  if (isComplete) {
+    const accuracy = Math.round((correctAnswers / sessionCards.length) * 100);
     return (
       <div className="max-w-4xl mx-auto">
-        {session.showConfetti && (
+        {sessionCards.length > 0 && (
           <Confetti
             width={width}
             height={height}
@@ -299,11 +268,11 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
           <div className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-gray-50 rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">{session.cards.length}</div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">{sessionCards.length}</div>
                 <div className="text-gray-600">Cards Reviewed</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">{session.correctAnswers}</div>
+                <div className="text-3xl font-bold text-green-600 mb-2">{correctAnswers}</div>
                 <div className="text-gray-600">Correct Answers</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-6 text-center">
@@ -315,17 +284,10 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
             <div className="flex justify-center gap-4">
               <Button
                 onClick={() => {
-                  setRepeat(true);
-                  setSession({
-                    cards: [],
-                    currentIndex: 0,
-                    showAnswer: false,
-                    options: [],
-                    selectedAnswer: null,
-                    isComplete: false,
-                    showConfetti: false,
-                    correctAnswers: 0
-                  });
+                  setIsComplete(false);
+                  setCurrentIndex(0);
+                  setCorrectAnswers(0);
+                  setSelectedAnswer(null);
                 }}
                 className="flex items-center gap-2"
                 disabled={isFetching}
@@ -345,7 +307,7 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
     );
   }
 
-  if (!currentCard) {
+  if (sessionCards.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-8 text-center">
         <p className="text-gray-500">No cards available for review.</p>
@@ -356,173 +318,116 @@ export default function ReviewCards({ initialMode = 'multiple-choice', initialCo
     );
   }
 
-  if (initialMode !== 'flashcard' && (optionsLoading || session.options.length === 0)) {
-    return (
-      <div className="max-w-4xl mx-auto p-8 text-center">
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="w-full max-w-md mx-auto">
-            <div className="h-8 w-2/3 bg-gray-100 rounded mb-4 animate-pulse mx-auto" />
-            <div className="h-6 w-1/2 bg-gray-100 rounded mb-2 animate-pulse mx-auto" />
-            <div className="h-12 w-full bg-gray-100 rounded mb-2 animate-pulse" />
-            <div className="h-12 w-full bg-gray-100 rounded mb-2 animate-pulse" />
-            <div className="h-12 w-full bg-gray-100 rounded mb-2 animate-pulse" />
-            <div className="h-12 w-full bg-gray-100 rounded mb-2 animate-pulse" />
-          </div>
-          <p className="text-gray-400 text-sm mt-4">Loading question...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // FLASHCARD MODE
-  if (initialMode === 'flashcard') {
-    // Wrap the original handler to block navigation only during flip and show loading
-    const handleFlashcardResponseWithFlip = (knewIt: boolean) => {
-      if (isFlipping || isSubmitting) return;
-      setIsFlipping(true);
-      setIsSubmitting(true);
-    updateReview(
-      { cardId: currentCard.id, isSuccess: knewIt },
-      {
-        onSuccess: () => {
-          if (session.currentIndex === session.cards.length - 1) {
-            updateStreak();
-              setSession(prev => ({ 
-                ...prev, 
-                showConfetti: true,
-                correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-              }));
-          } else {
-              setSession(prev => ({ 
-                ...prev, 
-                currentIndex: prev.currentIndex + 1,
-                correctAnswers: knewIt ? prev.correctAnswers + 1 : prev.correctAnswers
-              }));
-            }
-          },
-          onSettled: () => {
-            setTimeout(() => {
-              setIsFlipping(false);
-              setIsSubmitting(false);
-            }, 350);
-        }
-      }
-    );
-  };
   return (
-      <div className="max-w-4xl mx-auto">
-        {/* Progress indicator for flashcard mode */}
-        <div className="flex justify-center mt-6 mb-4">
-          <span className="text-sm font-semibold bg-blue-50 text-blue-700 px-4 py-1 rounded-full">
-            Card {session.currentIndex + 1} of {session.cards.length}
-          </span>
-        </div>
-        <FlashcardReview
-          card={currentCard}
-          onResponse={handleFlashcardResponseWithFlip}
-          isLastCard={session.currentIndex === session.cards.length - 1}
-          isSubmitting={isSubmitting}
-        />
-        <div className="flex justify-center mt-8">
-          <div className="flex gap-4 bg-white border border-gray-200 rounded-xl shadow-sm px-6 py-3 w-full max-w-md items-center justify-between">
-            <Button
-              onClick={handlePrevious}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={session.currentIndex === 0 || isFlipping || isSubmitting}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </Button>
-            <div className="flex-1" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Progress bar */}
+        <div className="mb-8">
+          <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 dark:bg-blue-600 transition-all duration-300"
+              style={{ width: `${((currentIndex + 1) / sessionCards.length) * 100}%` }}
+            />
+          </div>
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {currentIndex + 1} of {sessionCards.length} cards
           </div>
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="w-full sm:max-w-lg mx-auto px-0 sm:px-0">
-      {/* Word modal for mobile */}
-      {showWordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-xs w-full mx-4 flex flex-col items-center">
-            <span className="text-2xl font-bold text-gray-900 break-words text-center mb-4">{currentCard.word}</span>
-            <button onClick={() => setShowWordModal(false)} className="mt-2 px-4 py-2 rounded bg-blue-500 text-white font-medium">Close</button>
-          </div>
-        </div>
-      )}
-      <div className="bg-white sm:rounded-2xl sm:shadow-xl sm:overflow-hidden sm:border sm:border-gray-100 rounded-none shadow-none border-none">
-        {/* Header/word area */}
-        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 px-3 py-4 sm:p-4 sm:rounded-t-2xl rounded-[12px] w-full flex flex-col items-center justify-center">
-          {/* Progress pill */}
-          <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full mb-2 flex items-center gap-2">
-            <svg className="w-4 h-4 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20h.01M12 4a8 8 0 100 16 8 8 0 000-16zm0 8v2m0 4h.01" /></svg>
-                      Card {session.currentIndex + 1} of {session.cards.length}
-                    </span>
-          {/* Word with tap-to-expand on mobile if truncated */}
-          <h2
-            className="text-2xl sm:text-4xl font-bold text-white text-center mb-1 truncate overflow-hidden text-ellipsis w-full cursor-pointer sm:cursor-default"
-            title={currentCard.word}
-                      onClick={() => {
-              if (window.innerWidth < 640 && currentCard.word.length > 18) setShowWordModal(true);
-                      }}
-                    >
-                    {currentCard.word}
-                  </h2>
-                  {currentCard.wordList && (
-            <p className="text-blue-100 text-center text-xs mt-1">
-                      From: {currentCard.wordList.name}
-                    </p>
-                  )}
-          {/* Divider */}
-          <div className="mt-3 border-t border-white/20 w-full mx-auto" />
-                </div>
-
-        {/* Options area, edge-to-edge on mobile, soft bg, more spacing */}
-        <div className="bg-white px-1 sm:px-6 pt-2 pb-4 sm:pb-6">
-          <div className="grid grid-cols-1 gap-3 mt-2 mb-2">
-                    {session.options.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleOptionSelect(option)}
-                        disabled={session.showAnswer || session.selectedAnswer !== null}
-                className={`w-full p-4 sm:p-5 rounded-xl text-left transition-all duration-150 border text-base font-medium shadow-sm
-                  ${session.selectedAnswer === option && !session.showAnswer ? 'border-blue-500 bg-blue-50' : ''}
-                  ${session.showAnswer && option === currentCard.definition ? 'border-green-500 bg-green-50' : ''}
-                  ${session.showAnswer && session.selectedAnswer === option && option !== currentCard.definition ? 'border-red-500 bg-red-50' : ''}
-                  ${!session.selectedAnswer && !session.showAnswer ? 'hover:border-blue-300 hover:bg-blue-100/60 border-gray-200 active:scale-95' : ''}
-                  ${(session.showAnswer || session.selectedAnswer) && option !== session.selectedAnswer && option !== currentCard.definition ? 'opacity-50' : ''}
-                `}
-                style={{ boxShadow: '0 1px 4px 0 rgba(0,0,0,0.03)' }}
-              >
-                <p className="text-base sm:text-lg">{option}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-        {/* Sticky navigation bar on mobile */}
-        <div className="border-t border-gray-100 p-3 sm:p-4 bg-white flex items-center justify-between sm:rounded-b-2xl rounded-none sticky bottom-0 z-10">
-                  <Button
-                    onClick={handlePrevious}
-                    variant="outline"
-            className="flex items-center gap-2 px-4 py-2 text-base"
-                    disabled={session.currentIndex === 0}
+        {/* Card content */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+          {reviewMode === "flashcards" ? (
+            <FlashcardReview
+              card={sessionCards[currentIndex]}
+              onResponse={handleResponse}
+              onResponseWithFlip={handleResponseWithFlip}
+              isFlipping={isFlipping}
+              setIsFlipping={setIsFlipping}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+            />
+          ) : (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                {sessionCards[currentIndex]?.word}
+              </h2>
+              <div className="grid grid-cols-1 gap-3">
+                {sessionCards[currentIndex]?.options?.map((option: string, index: number) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerSelect(option)}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "p-4 text-left rounded-lg border transition-all duration-200",
+                      selectedAnswer === option
+                        ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+                      isSubmitting && "opacity-50 cursor-not-allowed"
+                    )}
                   >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-                  {session.showAnswer && (
-                    <Button
-                      onClick={handleNext}
-              className="flex items-center gap-2 px-4 py-2 text-base"
-                    >
-                      Next
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
+                    <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation buttons */}
+        <div className="mt-8 flex justify-between">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+            disabled={currentIndex === 0 || isSubmitting}
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentIndex(prev => Math.min(sessionCards.length - 1, prev + 1))}
+            disabled={currentIndex === sessionCards.length - 1 || isSubmitting}
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            Next
+          </Button>
+        </div>
+
+        {/* Completion screen */}
+        {isComplete && (
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full text-center">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Review Complete!
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                You got {correctAnswers} out of {sessionCards.length} cards correct.
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsComplete(false);
+                    setCurrentIndex(0);
+                    setCorrectAnswers(0);
+                    setSelectedAnswer(null);
+                  }}
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                >
+                  Review Again
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Handle navigation back to dashboard or next review
+                  }}
+                  className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

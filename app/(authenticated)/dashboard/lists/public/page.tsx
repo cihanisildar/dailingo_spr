@@ -7,8 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Book, Globe } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { SearchInput } from "@/components/ui/search-input";
 
 export default function PublicListsPage() {
+  const [searchTerm, setSearchTerm] = useState("");
   const { data: lists, isLoading } = useQuery({
     queryKey: ["publicLists"],
     queryFn: async () => {
@@ -19,17 +22,34 @@ export default function PublicListsPage() {
 
   if (isLoading) return <PublicListsSkeleton />;
 
+  const filteredLists = lists?.filter(list => 
+    list.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    list.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Public Lists</h1>
-        <p className="text-blue-100">Discover vocabulary lists shared by the community.</p>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Public Lists</h1>
+            <p className="text-blue-100">Discover vocabulary lists shared by the community.</p>
+          </div>
+          <div className="w-full">
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search public lists..."
+              className="w-full bg-white/80 text-gray-800 placeholder:text-gray-500 border-none rounded-full [&>svg]:text-gray-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Lists Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {lists?.map((list) => (
+        {filteredLists?.map((list) => (
           <Link key={list.id} href={`/dashboard/lists/${list.id}`}>
             <Card className="h-full hover:shadow-lg transition-all group border-transparent hover:border-blue-200">
               <div className="p-6 flex flex-col h-full">
@@ -57,7 +77,7 @@ export default function PublicListsPage() {
         ))}
       </div>
 
-      {(!lists || lists.length === 0) && (
+      {(!filteredLists || filteredLists.length === 0) && (
         <Card className="p-8 text-center">
           <div className="max-w-md mx-auto">
             <Globe className="w-12 h-12 text-blue-200 mx-auto mb-4" />

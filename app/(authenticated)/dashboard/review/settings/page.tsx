@@ -113,12 +113,12 @@ export default function ReviewSettingsPage() {
   return (
     <div className="space-y-8">
       {/* Header Card */}
-      <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-8 overflow-hidden">
+      <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
         <div className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-semibold text-white">Review Schedule Settings</h1>
-              <p className="text-blue-100 mt-2">Track your learning progress over time.</p>
+              <p className="text-blue-100 dark:text-blue-200 mt-2">Track your learning progress over time.</p>
             </div>
             {!isEditing ? (
               <Button
@@ -146,40 +146,40 @@ export default function ReviewSettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
             <div className="p-4 sm:p-6 space-y-6">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Schedule Name</Label>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">Schedule Name</Label>
                 {isEditing ? (
                   <Input
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., My Custom Schedule"
-                    className="mt-2"
+                    className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                   />
                 ) : (
-                  <p className="mt-2 text-gray-900 font-medium">{name}</p>
+                  <p className="mt-2 text-gray-900 dark:text-gray-100 font-medium">{name}</p>
                 )}
               </div>
               
               <div>
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700">Description</Label>
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</Label>
                 {isEditing ? (
                   <Textarea
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Add a description for your review schedule..."
-                    className="mt-2 min-h-[100px]"
+                    className="mt-2 min-h-[100px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                   />
                 ) : (
-                  <p className="mt-2 text-gray-700 leading-relaxed">{description || "No description provided"}</p>
+                  <p className="mt-2 text-gray-700 dark:text-gray-300 leading-relaxed">{description || "No description provided"}</p>
                 )}
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-gray-700">Review Intervals</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Review Intervals</Label>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {schedule?.intervals.map((interval) => (
                     <div
@@ -187,15 +187,15 @@ export default function ReviewSettingsPage() {
                       className={cn(
                         "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                         isEditing 
-                          ? "bg-blue-50 text-blue-700 border border-blue-100" 
-                          : "bg-gray-50 text-gray-700 border border-gray-100"
+                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800" 
+                          : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-700"
                       )}
                     >
                       <span className="font-medium">{interval} days</span>
                       {isEditing && (
                         <button
                           onClick={() => handleRemoveInterval(interval)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors hover:bg-blue-100/50 rounded-full p-1"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors hover:bg-blue-100/50 dark:hover:bg-blue-900/50 rounded-full p-1"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -212,12 +212,12 @@ export default function ReviewSettingsPage() {
                       value={newInterval}
                       onChange={(e) => setNewInterval(e.target.value)}
                       placeholder="Add new interval (in days)"
-                      className="w-full sm:max-w-[200px]"
+                      className="w-full sm:max-w-[200px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                     />
                     <Button
                       onClick={handleAddInterval}
                       disabled={updateScheduleMutation.isPending}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                      className="flex items-center gap-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 w-full sm:w-auto"
                     >
                       <Plus className="h-4 w-4" />
                       Add Interval
@@ -231,22 +231,22 @@ export default function ReviewSettingsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <Card className="bg-blue-50 border-blue-100">
+          <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
             <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                  <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="font-medium text-blue-900">Current Schedule</h3>
+                <h3 className="font-medium text-blue-900 dark:text-blue-100">Current Schedule</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-1 gap-4">
                 <div>
-                  <p className="text-sm text-blue-700 font-medium">Total Intervals</p>
-                  <p className="text-2xl font-semibold text-blue-900">{schedule?.intervals.length}</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Total Intervals</p>
+                  <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">{schedule?.intervals.length}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-blue-700 font-medium">Longest Interval</p>
-                  <p className="text-2xl font-semibold text-blue-900">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Longest Interval</p>
+                  <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
                     {Math.max(...(schedule?.intervals || [0]))} days
                   </p>
                 </div>

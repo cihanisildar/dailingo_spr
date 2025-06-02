@@ -121,34 +121,34 @@ export default function DashboardPage() {
       <div className="lg:hidden">
         <div className="grid grid-cols-4 gap-3 px-1">
           <Link href="/dashboard/review">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/review' ? 'bg-emerald-50 border-emerald-200' : 'hover:bg-emerald-50'}`}>
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/review' ? 'bg-emerald-900/20 border-emerald-800 dark:bg-emerald-900/30' : 'hover:bg-emerald-900/10 dark:hover:bg-emerald-900/20'}`}>
               <div className="flex flex-col items-center gap-2">
-                <PlayCircle className={`w-6 h-6 ${pathname === '/dashboard/review' ? 'text-emerald-600' : 'text-emerald-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/review' ? 'text-emerald-600' : 'text-emerald-500'}`}>Review</span>
+                <PlayCircle className={`w-6 h-6 ${pathname === '/dashboard/review' ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/review' ? 'text-emerald-400' : 'text-emerald-500'}`}>Review</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/cards">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/cards' ? 'bg-blue-50 border-blue-200' : 'hover:bg-blue-50'}`}>
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/cards' ? 'bg-blue-900/20 border-blue-800 dark:bg-blue-900/30' : 'hover:bg-blue-900/10 dark:hover:bg-blue-900/20'}`}>
               <div className="flex flex-col items-center gap-2">
-                <Layers className={`w-6 h-6 ${pathname === '/dashboard/cards' ? 'text-blue-600' : 'text-blue-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/cards' ? 'text-blue-600' : 'text-blue-500'}`}>Cards</span>
+                <Layers className={`w-6 h-6 ${pathname === '/dashboard/cards' ? 'text-blue-400' : 'text-blue-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/cards' ? 'text-blue-400' : 'text-blue-500'}`}>Cards</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/lists">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/lists' ? 'bg-purple-50 border-purple-200' : 'hover:bg-purple-50'}`}>
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/lists' ? 'bg-purple-900/20 border-purple-800 dark:bg-purple-900/30' : 'hover:bg-purple-900/10 dark:hover:bg-purple-900/20'}`}>
               <div className="flex flex-col items-center gap-2">
-                <Bookmark className={`w-6 h-6 ${pathname === '/dashboard/lists' ? 'text-purple-600' : 'text-purple-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/lists' ? 'text-purple-600' : 'text-purple-500'}`}>Lists</span>
+                <Bookmark className={`w-6 h-6 ${pathname === '/dashboard/lists' ? 'text-purple-400' : 'text-purple-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/lists' ? 'text-purple-400' : 'text-purple-500'}`}>Lists</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/test">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/test' ? 'bg-amber-50 border-amber-200' : 'hover:bg-amber-50'}`}>
+            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/test' ? 'bg-amber-900/20 border-amber-800 dark:bg-amber-900/30' : 'hover:bg-amber-900/10 dark:hover:bg-amber-900/20'}`}>
               <div className="flex flex-col items-center gap-2">
-                <FileText className={`w-6 h-6 ${pathname === '/dashboard/test' ? 'text-amber-600' : 'text-amber-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/test' ? 'text-amber-600' : 'text-amber-500'}`}>Test</span>
+                <FileText className={`w-6 h-6 ${pathname === '/dashboard/test' ? 'text-amber-400' : 'text-amber-500'}`} />
+                <span className={`text-sm font-medium ${pathname === '/dashboard/test' ? 'text-amber-400' : 'text-amber-500'}`}>Test</span>
               </div>
             </Card>
           </Link>
@@ -156,57 +156,57 @@ export default function DashboardPage() {
       </div>
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 rounded-3xl p-8">
         <h1 className="text-3xl font-bold text-white mb-2">Welcome Back!</h1>
-        <p className="text-blue-100">Track your progress and keep learning.</p>
+        <p className="text-blue-100 dark:text-blue-200">Track your progress and keep learning.</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-orange-50">
+        <Card className="p-6 bg-orange-900/10 dark:bg-orange-900/20">
           <div className="flex items-center gap-4">
-            <div className="bg-orange-100 p-3 rounded-lg">
-              <Flame className="w-6 h-6 text-orange-600" />
+            <div className="bg-orange-900/20 dark:bg-orange-900/30 p-3 rounded-lg">
+              <Flame className="w-6 h-6 text-orange-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Current Streak</p>
-              <h3 className="text-2xl font-bold text-gray-900">{stats.currentStreak || 0} Days</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Current Streak</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.currentStreak || 0} Days</h3>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-blue-50">
+        <Card className="p-6 bg-blue-900/10 dark:bg-blue-900/20">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-blue-600" />
+            <div className="bg-blue-900/20 dark:bg-blue-900/30 p-3 rounded-lg">
+              <Clock className="w-6 h-6 text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Today's Review</p>
-              <h3 className="text-2xl font-bold text-gray-900">{todayCards?.length || 0} Cards</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Today's Review</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{todayCards?.length || 0} Cards</h3>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-emerald-50">
+        <Card className="p-6 bg-emerald-900/10 dark:bg-emerald-900/20">
           <div className="flex items-center gap-4">
-            <div className="bg-emerald-100 p-3 rounded-lg">
-              <BookOpen className="w-6 h-6 text-emerald-600" />
+            <div className="bg-emerald-900/20 dark:bg-emerald-900/30 p-3 rounded-lg">
+              <BookOpen className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Cards</p>
-              <h3 className="text-2xl font-bold text-gray-900">{allCards?.length || 0}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Total Cards</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{allCards?.length || 0}</h3>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-purple-50">
+        <Card className="p-6 bg-purple-900/10 dark:bg-purple-900/20">
           <div className="flex items-center gap-4">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <ListChecks className="w-6 h-6 text-purple-600" />
+            <div className="bg-purple-900/20 dark:bg-purple-900/30 p-3 rounded-lg">
+              <ListChecks className="w-6 h-6 text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Word Lists</p>
-              <h3 className="text-2xl font-bold text-gray-900">{wordLists?.length || 0}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Word Lists</p>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{wordLists?.length || 0}</h3>
             </div>
           </div>
         </Card>
@@ -217,41 +217,41 @@ export default function DashboardPage() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Learning Progress</h2>
-              <p className="text-sm text-gray-500">Your vocabulary journey</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Learning Progress</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Your vocabulary journey</p>
             </div>
-            <BookOpen className="w-5 h-5 text-gray-400" />
+            <BookOpen className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           </div>
           
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                <div className="p-2 bg-emerald-900/20 dark:bg-emerald-900/30 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
                 </div>
-                <span className="text-gray-600">Mastered Words</span>
+                <span className="text-gray-600 dark:text-gray-300">Mastered Words</span>
               </div>
-              <span className="font-semibold">{stats.completedCards || 0}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.completedCards || 0}</span>
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
+                <div className="p-2 bg-blue-900/20 dark:bg-blue-900/30 rounded-lg">
+                  <BookOpen className="w-4 h-4 text-blue-400" />
                 </div>
-                <span className="text-gray-600">In Progress</span>
+                <span className="text-gray-600 dark:text-gray-300">In Progress</span>
               </div>
-              <span className="font-semibold">{stats.activeCards || 0}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.activeCards || 0}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <div className="p-2 bg-amber-900/20 dark:bg-amber-900/30 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
                 </div>
-                <span className="text-gray-600">Need Review</span>
+                <span className="text-gray-600 dark:text-gray-300">Needs Review</span>
               </div>
-              <span className="font-semibold">{stats.challengingCards || 0}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.needsReview || 0}</span>
             </div>
 
             <div className="mt-6 pt-4 border-t">

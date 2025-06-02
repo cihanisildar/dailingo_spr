@@ -9,11 +9,24 @@ import { cn } from "@/lib/utils";
 interface FlashcardReviewProps {
   card: Card;
   onResponse: (knewIt: boolean) => void;
-  isLastCard: boolean;
-  isSubmitting?: boolean;
+  onResponseWithFlip: (knewIt: boolean) => void;
+  isFlipping: boolean;
+  setIsFlipping: (value: boolean) => void;
+  isSubmitting: boolean;
+  setIsSubmitting: (value: boolean) => void;
+  isLastCard?: boolean;
 }
 
-export function FlashcardReview({ card, onResponse, isLastCard, isSubmitting }: FlashcardReviewProps) {
+export function FlashcardReview({ 
+  card, 
+  onResponse, 
+  onResponseWithFlip,
+  isFlipping,
+  setIsFlipping,
+  isSubmitting,
+  setIsSubmitting,
+  isLastCard 
+}: FlashcardReviewProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [hasResponded, setHasResponded] = useState(false);
@@ -35,9 +48,11 @@ export function FlashcardReview({ card, onResponse, isLastCard, isSubmitting }: 
     if (hasResponded) return;
     setHasResponded(true);
     setIsTransitioning(true);
-    onResponse(knewIt);
+    setIsFlipping(true);
+    onResponseWithFlip(knewIt);
     setTimeout(() => {
       setIsTransitioning(false);
+      setIsFlipping(false);
     }, 300);
   };
 
