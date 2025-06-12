@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
-import { Card } from "@prisma/client";
+import { useApi } from "@/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -17,44 +16,35 @@ import {
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 
+// Remove Prisma import and define Card interface
+interface Card {
+  id: string;
+  word: string;
+  definition: string;
+  lastReviewed?: string | null;
+  reviewStatus: string;
+}
+
 export default function AddToReview() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const api = useApi();
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
 
   // Fetch all user's cards
   const { data: cards, isLoading } = useQuery<Card[]>({
     queryKey: ["cards"],
     queryFn: async () => {
-      const { data } = await api.get("/cards");
-      console.log("Fetched cards:", data);
-      return data;
+      return api.get("/cards");
     },
   });
 
   // Mutation for adding cards to review
   const addToReviewMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      console.log("Starting mutation with cardIds:", cardIds);
-      const results = await Promise.all(
-        cardIds.map(async (cardId) => {
-          console.log("Sending request for cardId:", cardId);
-          try {
-            const response = await api.post("/cards/add-to-review", { cardId });
-            console.log("Response for cardId:", cardId, ":", response.data);
-            return response.data;
-          } catch (error) {
-            console.error("Error for cardId:", cardId, ":", error);
-            throw error;
-          }
-        })
-      );
-      console.log("All mutation results:", results);
-      return results;
+      return api.post("/cards/add-to-review", { cardIds });
     },
     onSuccess: (data) => {
-      console.log("Mutation successful, data:", data);
-      
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       queryClient.invalidateQueries({ queryKey: ["cards", "today"] });

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import toast from "react-hot-toast";
 
 const formSchema = z.object({
   word: z.string().min(1, "Word is required"),
@@ -51,6 +52,23 @@ export function CreateCardDialog() {
       onSuccess: () => {
         setOpen(false);
         form.reset();
+        toast.success("Card created successfully!");
+      },
+      onError: (error: any) => {
+        // Log the error to debug its structure
+        console.error("Create card error:", error);
+
+        // Try to extract the backend message
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.data?.message ||
+          error?.message;
+
+        if (backendMessage) {
+          toast.error(backendMessage);
+        } else {
+          toast.error("Failed to create card. Please try again.");
+        }
       },
     });
   }

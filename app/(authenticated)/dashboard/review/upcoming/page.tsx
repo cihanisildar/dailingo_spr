@@ -10,17 +10,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useUpcomingReviews } from "@/hooks/useCards";
 import { cn } from "@/lib/utils";
-import { Card as CardType } from "@/types/card";
-import { eachDayOfInterval, endOfMonth, format, isSameMonth, isToday, startOfMonth, startOfDay } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Card as CardType } from "@/types/models/card";
+import { eachDayOfInterval, endOfMonth, format, isSameMonth, isToday, startOfDay, startOfMonth } from "date-fns";
+import { Calendar, CheckCircle2, ChevronLeft, ChevronRight, Clock, XCircle } from "lucide-react";
 import { useState } from "react";
 
 type ExtendedCard = CardType & {
@@ -66,6 +60,15 @@ export default function UpcomingReviewsPage() {
     return <UpcomingReviewsSkeleton />;
   }
 
+  // Debug: Log review days and calendar days
+  console.log("Review days (API keys):", Object.keys(upcomingReviews?.cards || {}));
+  days.forEach(day => {
+    const dateStr = format(day, "yyyy-MM-dd");
+    if (upcomingReviews?.cards[dateStr]) {
+      console.log("Review scheduled for:", dateStr);
+    }
+  });
+
   return (
     <div className="space-y-8">
       {/* Header Card */}
@@ -93,13 +96,13 @@ export default function UpcomingReviewsPage() {
                     Review Schedule
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto bg-white dark:bg-gray-900">
+                <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-xl">
                   <DialogHeader>
-                    <DialogTitle className="text-gray-900 dark:text-gray-100">How Reviews Work</DialogTitle>
+                    <DialogTitle className="text-lg font-medium">How Reviews Work</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100">Spaced Repetition System</h3>
+                      <h3 className="font-medium">Spaced Repetition System</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         When you learn a new word, you'll review it multiple times with increasing intervals:
                       </p>
@@ -125,11 +128,11 @@ export default function UpcomingReviewsPage() {
 
                         return (
                           <div key={interval} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-medium text-sm">
+                            <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm">
                               {index + 1}
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            <div>
+                              <p className="text-sm font-medium">
                                 Review #{index + 1}: {getLabel(interval)}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -142,17 +145,17 @@ export default function UpcomingReviewsPage() {
                     </div>
 
                     <div className="border-t dark:border-gray-800 pt-3">
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm mb-2">Calendar Colors Explained</h3>
+                      <h3 className="font-medium text-sm mb-2">Calendar Colors Explained</h3>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                           <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full"></div>
-                          <p className="text-xs text-gray-700 dark:text-gray-300">
+                          <p className="text-xs">
                             <span className="font-medium">Scheduled Review:</span> Your next immediate review
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                           <div className="w-2 h-2 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-                          <p className="text-xs text-gray-700 dark:text-gray-300">
+                          <p className="text-xs">
                             <span className="font-medium">Potential Review:</span> Future reviews after completing earlier ones
                           </p>
                         </div>
@@ -229,12 +232,12 @@ export default function UpcomingReviewsPage() {
                     "min-h-[56px] sm:min-h-[80px] md:min-h-[100px] p-1.5 sm:p-3 transition-all duration-200 relative flex flex-col items-center justify-center group cursor-pointer",
                     !isCurrentMonth && "bg-gray-50 dark:bg-gray-800/50 cursor-default",
                     isCompleted && "bg-green-500 dark:bg-green-600",
-                    !isCompleted && dayData?.total > 0 && "bg-blue-50 dark:bg-blue-900/30",
+                    !isCompleted && dayData && dayData.total > 0 && "bg-blue-50 dark:bg-blue-900/30",
                     // Grid frame lines
                     !isLastCol && "border-r border-gray-200 dark:border-gray-700",
                     !isLastRow && "border-b border-gray-200 dark:border-gray-700"
                   )}
-                  onClick={() => dayData?.total > 0 ? setSelectedDay(dateStr) : undefined}
+                  onClick={() => dayData && dayData.total > 0 ? setSelectedDay(dateStr) : undefined}
                   style={{ zIndex: isTodayDay ? 2 : 1 }}
                 >
                   {/* Date number, always visible */}
@@ -249,8 +252,13 @@ export default function UpcomingReviewsPage() {
                     {format(day, "d")}
                   </span>
 
+                  {/* Blue dot indicator for days with reviews */}
+                  {dayData && dayData.total > 0 && (
+                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-500"></div>
+                  )}
+
                   {/* Review indicators */}
-                  {dayData?.total > 0 && (
+                  {dayData && dayData.total > 0 && (
                     <div className="flex flex-col items-center gap-1 mt-1">
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
@@ -280,25 +288,22 @@ export default function UpcomingReviewsPage() {
         if (!dayData) return null;
         return (
           <Dialog open={!!selectedDay} onOpenChange={() => setSelectedDay(null)}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto">
+            <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full max-w-lg mx-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-xl">
               <DialogHeader>
-                <DialogTitle>Review History for {format(new Date(selectedDay), "MMMM d, yyyy")}</DialogTitle>
+                <DialogTitle className="text-lg font-medium">Review History for {format(new Date(selectedDay), "MMMM d, yyyy")}</DialogTitle>
               </DialogHeader>
-              <div className="mt-4 space-y-4">
-                {dayData.cards.map(function(card: ExtendedCard, idx: number): JSX.Element {
-                  // Find the review for this card on this day
+              <div className="mt-4 space-y-3">
+                {dayData.cards.map((card, idx) => {
                   const review = Array.isArray(card.reviews)
-                    ? card.reviews.find(function(r: { createdAt: string; isSuccess: boolean }): boolean {
-                        return format(new Date(r.createdAt), 'yyyy-MM-dd') === selectedDay;
-                      })
+                    ? card.reviews.find(r => format(new Date(r.createdAt), 'yyyy-MM-dd') === selectedDay)
                     : null;
                   return (
-                    <div key={card.id + idx} className="p-4 rounded-lg bg-white border flex flex-col gap-1">
+                    <div key={card.id + idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{card.word}</span>
+                        <span className="font-medium">{card.word}</span>
                         {review ? (
                           review.isSuccess ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
                             <XCircle className="w-4 h-4 text-red-400" />
                           )
@@ -306,8 +311,8 @@ export default function UpcomingReviewsPage() {
                           <Clock className="w-4 h-4 text-gray-400" />
                         )}
                       </div>
-                      <div className="text-gray-600 text-sm">{card.definition}</div>
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{card.definition}</div>
+                      <div className="text-xs text-gray-500 mt-2">
                         {review ? (
                           <>Reviewed at: {format(new Date(review.createdAt), 'p')}</>
                         ) : (

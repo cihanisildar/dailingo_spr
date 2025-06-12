@@ -17,60 +17,51 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import dailingo_logo from "../../../public/repeeker.png";
+import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
 
 function SignInForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [formError, setFormError] = useState("");
   const router = useRouter();
+  const { login } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-  const error = searchParams.get("error");
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    await signIn("google", { callbackUrl });
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    setFormError("");
+    setLoading(true);
+    setError(null);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Invalid credentials");
-      }
-
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
-        callbackUrl,
       });
 
       if (result?.error) {
-        throw new Error(result.error);
+        setError('Invalid email or password');
+        toast.error('Invalid email or password');
+        return;
       }
 
-      router.push(callbackUrl);
+      toast.success('Signed in successfully');
+      router.push('/dashboard');
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
-      setIsLoading(false);
+      setError('An error occurred. Please try again.');
+      toast.error('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleGoogleSignIn = async () => {
+    await signIn("google", { callbackUrl });
   };
 
   return (
@@ -100,7 +91,7 @@ function SignInForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
-          {(error || formError) && (
+          {(error || error === "OAuthAccountNotLinked" || error === "OAuthSignin" || error === "AccessDenied") && (
             <div className="bg-destructive/10 text-destructive text-center p-2 rounded-lg text-sm">
               {error === "OAuthAccountNotLinked"
                 ? "This email is already registered with a password. Please sign in with your email and password instead."
@@ -108,7 +99,7 @@ function SignInForm() {
                 ? "Could not sign in with Google. Please try again."
                 : error === "AccessDenied"
                 ? "Could not access your Google account. Please make sure you've granted the necessary permissions."
-                : formError || "An error occurred. Please try again."}
+                : error || "An error occurred. Please try again."}
             </div>
           )}
 
@@ -122,7 +113,7 @@ function SignInForm() {
                 name="email"
                 placeholder="Enter your email"
                 type="email"
-                disabled={isLoading}
+                disabled={loading}
                 required
                 className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
               />
@@ -136,7 +127,7 @@ function SignInForm() {
                 name="password"
                 placeholder="Enter your password"
                 type="password"
-                disabled={isLoading}
+                disabled={loading}
                 required
                 className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
               />
@@ -145,7 +136,7 @@ function SignInForm() {
             <Button
               type="submit"
               className="w-full h-10 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white mt-2 shadow-lg shadow-blue-200/40"
-              disabled={isLoading}
+              disabled={loading}
             >
               Sign in with Email
             </Button>
@@ -166,7 +157,7 @@ function SignInForm() {
             type="button"
             variant="outline"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={loading}
             className="w-full h-10 bg-white hover:bg-white/90 dark:bg-slate-800/50 dark:hover:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700"
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

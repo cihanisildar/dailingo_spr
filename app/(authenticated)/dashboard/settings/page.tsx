@@ -23,13 +23,20 @@ import {
   Trash2,
   AlertCircle
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import api from "@/lib/axios";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useSettings } from "@/hooks/useSettings";
+
+interface UserSettings {
+  emailNotifications: boolean;
+  reviewReminders: boolean;
+  publicProfile: boolean;
+  shareStatistics: boolean;
+}
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,11 +44,32 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { getSettings, updateSettings, deleteAccount } = useSettings();
+
+  const [settings, setSettings] = useState<UserSettings>({
+    emailNotifications: false,
+    reviewReminders: false,
+    publicProfile: false,
+    shareStatistics: false,
+  });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await getSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        toast.error('Failed to load settings');
+      }
+    };
+    loadSettings();
+  }, [getSettings]);
 
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Save settings logic here
+      await updateSettings(settings);
       toast.success("Settings saved successfully");
     } catch (error) {
       toast.error("Failed to save settings");
@@ -53,7 +81,7 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      await api.delete('/user/delete');
+      await deleteAccount();
       toast.success("Account deleted successfully");
       await signOut({ callbackUrl: '/' });
     } catch (error) {
@@ -62,6 +90,10 @@ export default function SettingsPage() {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
     }
+  };
+
+  const handleSettingChange = (key: keyof UserSettings) => (checked: boolean) => {
+    setSettings(prev => ({ ...prev, [key]: checked }));
   };
 
   return (
@@ -113,7 +145,10 @@ export default function SettingsPage() {
                   Receive email notifications for important updates
                 </p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.emailNotifications}
+                onCheckedChange={handleSettingChange('emailNotifications')}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -122,7 +157,10 @@ export default function SettingsPage() {
                   Get reminded when it's time to review your cards
                 </p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.reviewReminders}
+                onCheckedChange={handleSettingChange('reviewReminders')}
+              />
             </div>
           </div>
         </Card>
@@ -141,7 +179,10 @@ export default function SettingsPage() {
                   Allow others to see your profile and progress
                 </p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.publicProfile}
+                onCheckedChange={handleSettingChange('publicProfile')}
+              />
             </div>
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
@@ -150,7 +191,10 @@ export default function SettingsPage() {
                   Share your learning statistics publicly
                 </p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.shareStatistics}
+                onCheckedChange={handleSettingChange('shareStatistics')}
+              />
             </div>
           </div>
         </Card>

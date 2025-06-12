@@ -19,70 +19,40 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import dailingo_logo from "../../../public/repeeker.png";
 import Image from "next/image";
+import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
 
 export default function SignUpPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [formError, setFormError] = useState("");
   const router = useRouter();
+  const { register } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleSignUp = async () => {
-    setIsLoading(true);
+    setLoading(true);
     await signIn("google", { callbackUrl: "/dashboard" });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    setFormError("");
+    setError(null);
+    setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const terms = formData.get("terms");
-
-    if (!terms) {
-      setFormError("Please accept the terms and conditions");
-      setIsLoading(false);
-      return;
-    }
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Something went wrong");
-      }
-
-      // Sign in the user after successful registration
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        throw new Error(signInResult.error);
-      }
-
-      router.push("/dashboard");
+      await register({ email, password, firstName, lastName });
+      toast.success('Account created successfully');
+      router.push('/auth/signin');
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "Something went wrong"
-      );
-      setIsLoading(false);
+      setError('Failed to create account');
+      toast.error('Failed to create account');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,9 +85,9 @@ export default function SignUpPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
-          {formError && (
+          {error && (
             <div className="bg-destructive/10 text-destructive text-center p-2 rounded-lg text-sm">
-              {formError}
+              {error}
             </div>
           )}
 
@@ -131,7 +101,7 @@ export default function SignUpPage() {
                   id="firstName"
                   name="firstName"
                   placeholder="John"
-                  disabled={isLoading}
+                  disabled={loading}
                   required
                   className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
                 />
@@ -144,7 +114,7 @@ export default function SignUpPage() {
                   id="lastName"
                   name="lastName"
                   placeholder="Doe"
-                  disabled={isLoading}
+                  disabled={loading}
                   required
                   className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
                 />
@@ -160,7 +130,7 @@ export default function SignUpPage() {
                 name="email"
                 placeholder="john@example.com"
                 type="email"
-                disabled={isLoading}
+                disabled={loading}
                 required
                 className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
               />
@@ -175,7 +145,7 @@ export default function SignUpPage() {
                 name="password"
                 placeholder="Create a password"
                 type="password"
-                disabled={isLoading}
+                disabled={loading}
                 required
                 minLength={8}
                 className="h-10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
@@ -211,7 +181,7 @@ export default function SignUpPage() {
             <Button
               type="submit"
               className="w-full h-10 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white mt-2 shadow-lg shadow-blue-200/40"
-              disabled={isLoading}
+              disabled={loading}
             >
               Create Account
             </Button>
@@ -231,7 +201,7 @@ export default function SignUpPage() {
               type="button"
               variant="outline"
               onClick={handleGoogleSignUp}
-              disabled={isLoading}
+              disabled={loading}
               className="w-full h-10 bg-white hover:bg-white/90 dark:bg-slate-800/50 dark:hover:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700"
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
 import { Loader2, Plus, X, Edit2, Check, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReviewSettingsSkeleton } from "@/components/review/ReviewSkeletons";
+import { useReviewScheduleQuery } from "@/hooks/useReview";
 
 interface ReviewSchedule {
   id: string;
@@ -22,43 +23,50 @@ interface ReviewSchedule {
 }
 
 export default function ReviewSettingsPage() {
+  // 1. All state hooks first
   const [isEditing, setIsEditing] = useState(false);
   const [newInterval, setNewInterval] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  
+  // 2. All other hooks
   const queryClient = useQueryClient();
+  const api = useApi();
+  const { data: schedule, isLoading, error } = useReviewScheduleQuery();
 
-  // Fetch current review schedule
-  const { data: schedule, isLoading } = useQuery<ReviewSchedule>({
-    queryKey: ["review-schedule"],
-    queryFn: async () => {
-      const { data } = await api.get("/review-schedule");
-      setName(data.name);
-      setDescription(data.description || "");
-      return data;
-    },
-  });
-
-  // Update review schedule mutation
+  // 3. Update review schedule mutation
   const updateScheduleMutation = useMutation({
     mutationFn: async (data: {
       intervals: number[];
       name: string;
       description: string;
     }) => {
-      const response = await api.post("/review-schedule", data);
-      return response.data;
+      console.log('Mutation data:', data);
+      const response = await api.post<ReviewSchedule>("/review-schedule", data);
+      console.log('Mutation response:', response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Mutation success:', data);
       toast.success("Review schedule updated successfully");
-      setIsEditing(false); // Exit edit mode on success
+      setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ["review-schedule"] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Mutation error:', error);
       toast.error("Failed to update review schedule");
     },
   });
 
+  // 4. Effects
+  useEffect(() => {
+    if (schedule) {
+      setName(schedule.name);
+      setDescription(schedule.description || "");
+    }
+  }, [schedule]);
+
+  // 5. Event handlers
   const handleAddInterval = () => {
     const interval = parseInt(newInterval);
     if (isNaN(interval) || interval <= 0) {
@@ -82,15 +90,22 @@ export default function ReviewSettingsPage() {
   };
 
   const handleRemoveInterval = (interval: number) => {
-    const newIntervals = schedule?.intervals.filter((i) => i !== interval) || [];
+    if (!schedule) return;
+    
+    const newIntervals = schedule.intervals.filter((i) => i !== interval);
     if (newIntervals.length === 0) {
       toast.error("You must have at least one review interval");
       return;
     }
+
+    console.log('Removing interval:', interval);
+    console.log('New intervals:', newIntervals);
+    console.log('Current schedule:', schedule);
+
     updateScheduleMutation.mutate({
       intervals: newIntervals,
-      name,
-      description,
+      name: schedule.name,
+      description: schedule.description || "",
     });
   };
 
@@ -106,10 +121,16 @@ export default function ReviewSettingsPage() {
     });
   };
 
+  // 6. Loading and error states
   if (isLoading) {
     return <ReviewSettingsSkeleton />;
   }
 
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  // 7. Main render
   return (
     <div className="space-y-8">
       {/* Header Card */}

@@ -5,7 +5,7 @@ import ReviewCards from "@/components/review/ReviewCards";
 
 export default function ReviewSessionPage() {
   const searchParams = useSearchParams();
-  const mode = searchParams.get("mode") === "flashcard" ? "flashcard" : "multiple-choice";
+  const mode = searchParams.get("mode") === "flashcard" ? "flashcards" : "multiple-choice";
   const repeat = searchParams.get("repeat") === "true";
   // You can also get count or other params if needed
 

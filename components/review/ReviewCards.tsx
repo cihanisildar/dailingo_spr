@@ -1,18 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useTodayCards } from "@/hooks/useCards";
-import { useUpdateReview } from "@/hooks/useCards";
+import { useCards, useTodayCards, useUpdateReview } from "@/hooks/useCards";
+import { useReview } from '@/hooks/useReview';
 import { useUpdateStreak } from "@/hooks/useStreak";
-import { Card } from "@/types/card";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Trophy, CheckCircle2, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
-import Confetti from "react-confetti";
 import { useWindowSize } from "@/hooks/useWindowSize";
-import { FlashcardReview } from "./FlashcardReview";
 import { cn } from "@/lib/utils";
+import { Card } from "@/types/models/card";
+import { useQuery } from "@tanstack/react-query";
+import { Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import Confetti from "react-confetti";
+import { FlashcardReview } from "./FlashcardReview";
 
 interface Word {
   id: string;
@@ -47,25 +47,39 @@ interface SessionState {
   correctAnswers: number;
 }
 
+interface ReviewResult {
+  cardId: string;
+  isCorrect: boolean;
+  timeSpent: number;
+}
+
 export default function ReviewCards({ initialMode = "multiple-choice", initialCount, initialRepeat = false }: ReviewCardsProps) {
   const router = useRouter();
   const { width, height } = useWindowSize();
   const [repeat, setRepeat] = useState(initialRepeat);
+  const { getCards } = useCards();
+  const { startReview, submitReviewResults } = useReview();
+
   const { data: allWords = [] } = useQuery({
     queryKey: ["words", "all"],
-    queryFn: async () => {
-      const response = await fetch("/api/words/all");
-      return response.json();
-    }
+    queryFn: () => getCards()
   });
 
   const { data: cardsData, refetch, isFetching, isLoading: isCardsLoading } = useTodayCards({ repeat });
   const { mutate: updateReview } = useUpdateReview();
   const { mutate: updateStreak } = useUpdateStreak();
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Combine all cards from different intervals into a single array
-  const allCards = Object.values(cardsData?.cards || {}).flat() as CardWithReviews[];
-  const total = cardsData?.total || 0;
+  let allCards: CardWithReviews[] = [];
+  if (Array.isArray(cardsData)) {
+    allCards = cardsData as CardWithReviews[];
+  } else if (cardsData && Array.isArray((cardsData as any).cards)) {
+    allCards = (cardsData as any).cards;
+  }
+  const total = allCards.length;
 
   const [sessionCards, setSessionCards] = useState<CardWithReviews[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -200,34 +214,38 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
   useEffect(() => {
     if (allCards.length > 0 && !sessionStarted.current) {
       sessionStarted.current = true;
-      // POST to /api/review-session
-      fetch('/api/review-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: initialMode,
-          isRepeat: repeat,
-          cards: allCards.map(card => card.id),
-        })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.id) setSessionId(data.id);
-        })
-        .catch(() => {});
+      startReview({
+        cardIds: allCards.map((card: Card) => card.id),
+      }).then(data => {
+        if (data.sessionId) setSessionId(data.sessionId);
+      }).catch(() => {});
     }
-  }, [allCards, initialMode, repeat]);
+  }, [allCards, startReview]);
 
   // Complete review session when finished
   useEffect(() => {
     if (isComplete && sessionId) {
-      fetch('/api/review-session', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
+      const results: ReviewResult[] = sessionCards.map((card, index) => ({
+        cardId: card.id,
+        isCorrect: card.options ? card.options[index] === card.definition : false,
+        timeSpent: 0, // TODO: Implement time tracking
+      }));
+      submitReviewResults(sessionId, results);
     }
-  }, [isComplete, sessionId]);
+  }, [isComplete, sessionId, sessionCards, submitReviewResults]);
+
+  useEffect(() => {
+    const loadCards = async () => {
+      try {
+        const cards = await getCards();
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to load cards');
+        setLoading(false);
+      }
+    };
+    loadCards();
+  }, [getCards]);
 
   // Show loading spinner if cards are loading
   if (isCardsLoading || !cardsData) {
@@ -242,7 +260,7 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
   if (isComplete) {
     const accuracy = Math.round((correctAnswers / sessionCards.length) * 100);
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className=" dark:bg-gray-950 flex items-center justify-center">
         {sessionCards.length > 0 && (
           <Confetti
             width={width}
@@ -256,32 +274,32 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
             }}
           />
         )}
-        <div className="bg-white rounded-[24px] shadow-xl overflow-hidden border border-gray-100">
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-8 text-center">
-            <div className="inline-block p-4 bg-white/10 rounded-full mb-4">
-              <Trophy className="w-12 h-12 text-white" />
+        <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-[24px] shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-6 sm:p-8 text-center">
+            <div className="inline-block p-3 sm:p-4 bg-white/10 rounded-full mb-4">
+              <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
             </div>
-            <h2 className="text-4xl font-bold text-white mb-2">Congratulations!</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2">Congratulations!</h2>
             <p className="text-blue-100">You've completed today's review session</p>
           </div>
 
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gray-50 rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-gray-900 mb-2">{sessionCards.length}</div>
-                <div className="text-gray-600">Cards Reviewed</div>
+          <div className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 sm:p-6 text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{sessionCards.length}</div>
+                <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Cards Reviewed</div>
               </div>
-              <div className="bg-gray-50 rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">{correctAnswers}</div>
-                <div className="text-gray-600">Correct Answers</div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 sm:p-6 text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-green-600 mb-2">{correctAnswers}</div>
+                <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Correct Answers</div>
               </div>
-              <div className="bg-gray-50 rounded-xl p-6 text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{accuracy}%</div>
-                <div className="text-gray-600">Accuracy</div>
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 sm:p-6 text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">{accuracy}%</div>
+                <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Accuracy</div>
               </div>
             </div>
 
-            <div className="flex justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Button
                 onClick={() => {
                   setIsComplete(false);
@@ -289,14 +307,15 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
                   setCorrectAnswers(0);
                   setSelectedAnswer(null);
                 }}
-                className="flex items-center gap-2"
+                className="w-full sm:w-auto"
                 disabled={isFetching}
               >
                 Repeat Session
               </Button>
               <Button
                 onClick={() => router.push('/dashboard/review')}
-                className="flex items-center gap-2"
+                variant="outline"
+                className="w-full sm:w-auto"
               >
                 Return to Review
               </Button>
@@ -309,21 +328,23 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
 
   if (sessionCards.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-8 text-center">
-        <p className="text-gray-500">No cards available for review.</p>
-        <Button onClick={() => router.push('/dashboard/review')} className="mt-4">
-          Return to Start
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sm:p-8 text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-6">No cards available for review.</p>
+          <Button onClick={() => router.push('/dashboard/review')} className="w-full sm:w-auto">
+            Return to Start
           </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className=" dark:bg-gray-950">
+      <div className="">
         {/* Progress bar */}
-        <div className="mb-8">
-          <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div className="mb-6 sm:mb-8">
+          <div className="h-2 dark:bg-gray-800 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-500 dark:bg-blue-600 transition-all duration-300"
               style={{ width: `${((currentIndex + 1) / sessionCards.length) * 100}%` }}
@@ -335,7 +356,7 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
         </div>
 
         {/* Card content */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
           {reviewMode === "flashcards" ? (
             <FlashcardReview
               card={sessionCards[currentIndex]}
@@ -347,8 +368,8 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
               setIsSubmitting={setIsSubmitting}
             />
           ) : (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            <div className="space-y-4 sm:space-y-6">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 text-center">
                 {sessionCards[currentIndex]?.word}
               </h2>
               <div className="grid grid-cols-1 gap-3">
@@ -358,14 +379,14 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
                     onClick={() => handleAnswerSelect(option)}
                     disabled={isSubmitting}
                     className={cn(
-                      "p-4 text-left rounded-lg border transition-all duration-200",
+                      "p-3 sm:p-4 text-left rounded-lg border transition-all duration-200",
                       selectedAnswer === option
                         ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30"
                         : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
                       isSubmitting && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    <span className="text-gray-900 dark:text-gray-100">{option}</span>
+                    <span className="text-gray-900 dark:text-gray-100 text-sm sm:text-base">{option}</span>
                   </button>
                 ))}
               </div>
@@ -374,7 +395,7 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
         </div>
 
         {/* Navigation buttons */}
-        <div className="mt-8 flex justify-between">
+        <div className="mt-6 sm:mt-8 flex justify-between">
           <Button
             variant="outline"
             onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
@@ -392,42 +413,6 @@ export default function ReviewCards({ initialMode = "multiple-choice", initialCo
             Next
           </Button>
         </div>
-
-        {/* Completion screen */}
-        {isComplete && (
-          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full text-center">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Review Complete!
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                You got {correctAnswers} out of {sessionCards.length} cards correct.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsComplete(false);
-                    setCurrentIndex(0);
-                    setCorrectAnswers(0);
-                    setSelectedAnswer(null);
-                  }}
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                >
-                  Review Again
-                </Button>
-                <Button
-                  onClick={() => {
-                    // Handle navigation back to dashboard or next review
-                  }}
-                  className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white"
-                >
-                  Continue
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

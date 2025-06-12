@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
+import { WordDetails } from "@/types/models/wordDetails";
 
 function CardDetailsSkeleton() {
   return (
@@ -282,7 +283,7 @@ export default function CardDetailsPage() {
               </h2>
               {card.wordDetails?.examples?.length ? (
                 <ul className="space-y-2 sm:space-y-3">
-                  {card.wordDetails.examples.map((example, index) => (
+                  {card.wordDetails.examples.map((example: WordDetails['examples'][0], index: number) => (
                     <li
                       key={index}
                       className="pl-3 sm:pl-4 border-l-2 border-blue-200 text-gray-600 text-sm leading-relaxed"
@@ -307,7 +308,7 @@ export default function CardDetailsPage() {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {card.wordDetails?.synonyms?.length ? (
-                  card.wordDetails.synonyms.map((synonym, index) => (
+                  card.wordDetails.synonyms.map((synonym: WordDetails['synonyms'][0], index: number) => (
                     <span
                       key={index}
                       className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-100"
@@ -330,7 +331,7 @@ export default function CardDetailsPage() {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {card.wordDetails?.antonyms?.length ? (
-                  card.wordDetails.antonyms.map((antonym, index) => (
+                  card.wordDetails.antonyms.map((antonym: WordDetails['antonyms'][0], index: number) => (
                     <span
                       key={index}
                       className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100"

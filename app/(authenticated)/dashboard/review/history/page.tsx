@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 import { CheckCircle, XCircle, Calendar, TrendingUp } from "lucide-react";
@@ -26,11 +26,11 @@ interface ReviewHistory {
 }
 
 export default function ReviewHistoryPage() {
+  const api = useApi();
   const { data, isLoading } = useQuery<ReviewHistory>({
     queryKey: ['review-history'],
     queryFn: async () => {
-      const { data } = await api.get('/cards/history');
-      return data;
+      return api.get('/cards/history');
     }
   });
 

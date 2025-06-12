@@ -4,10 +4,11 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
 import { Flame, Clock, BookOpen, List, ArrowRight, CheckCircle, FileText, Bookmark, Settings, BarChart2, PlayCircle, Layers, Trophy } from "lucide-react";
 import Link from "next/link";
-import { useCards, useTodayCards } from "@/hooks/useCards";
+import { useCards, useTodayCards, useUpcomingReviews } from "@/hooks/useCards";
+import { useLists } from "@/hooks/useLists";
+import { useStreak } from "@/hooks/useStreak";
 import { Button } from "@/components/ui/button";
 import {
   ListChecks,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
+import type { GroupedCards } from "@/hooks/useCards";
 
 // Add this interface near the top of the file
 interface Review {
@@ -28,50 +31,46 @@ interface Review {
 
 export default function DashboardPage() {
   const pathname = usePathname();
-  // Fetch streak data
-  const { data: streak, isLoading: isLoadingStreak } = useQuery({
-    queryKey: ['streak'],
-    queryFn: async () => {
-      const { data } = await api.get('/streak');
-      return data;
-    }
-  });
+  const { data: session, status } = useSession();
+
+  // Fetch streak data only when authenticated
+  const { data: streak } = useStreak({ enabled: status === "authenticated" });
 
   // Fetch today's cards using the hook
   const { data: todayCards, isLoading: isLoadingTodayCards } = useTodayCards();
 
   // Fetch all cards using the hook
-  const { data: allCards, isLoading: isLoadingAllCards } = useCards();
+  const { getCards } = useCards();
+  const { data: allCards, isLoading: isLoadingAllCards } = useQuery({
+    queryKey: ['cards'],
+    queryFn: () => getCards()
+  });
 
-  // Fetch word lists
+  // Fetch word lists using the hook
+  const { getLists } = useLists();
   const { data: wordLists, isLoading: isLoadingWordLists } = useQuery({
     queryKey: ['wordLists'],
-    queryFn: async () => {
-      const { data } = await api.get('/lists');
-      return data;
-    }
+    queryFn: () => getLists()
   });
 
   // Fetch upcoming reviews for the next 7 days
-  const { data: upcomingReviews = { cards: {} } } = useQuery({
-    queryKey: ["upcomingReviews"],
-    queryFn: async () => {
-      const { data } = await api.get("/cards/upcoming?days=7");
-      return data;
-    },
-  });
+  const { data: upcomingReviews = { cards: {} } } = useUpcomingReviews();
 
   // Fetch performance stats
-  const { data: stats = {} } = useQuery({
+  const { getCardStats } = useCards();
+  const { data: stats = {
+    currentStreak: 0,
+    completedCards: 0,
+    activeCards: 0,
+    needsReview: 0,
+    totalCards: 0
+  } } = useQuery({
     queryKey: ["stats"],
-    queryFn: async () => {
-      const { data } = await api.get("/cards/stats");
-      return data;
-    },
+    queryFn: () => getCardStats()
   });
 
   // Update the isLoading check to include the new loading state
-  const isLoading = isLoadingStreak || isLoadingTodayCards || isLoadingAllCards || isLoadingWordLists;
+  const isLoading = isLoadingTodayCards || isLoadingAllCards || isLoadingWordLists;
 
   if (isLoading) {
     return (
@@ -291,7 +290,7 @@ export default function DashboardPage() {
             {[...Array(7)].map((_, index) => {
               const date = addDays(new Date(), index);
               const dateStr = format(date, 'yyyy-MM-dd');
-              const reviewsForDay = upcomingReviews.cards[dateStr] || { total: 0 };
+              const reviewsForDay = (upcomingReviews.cards as Record<string, GroupedCards>)[dateStr] || { total: 0 };
 
               return (
                 <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">

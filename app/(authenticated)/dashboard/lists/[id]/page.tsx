@@ -31,9 +31,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import api from "@/lib/axios";
 import { cn, generateCardUrl } from "@/lib/utils";
-import { Card as CardType } from "@/types/card";
+import { Card as CardType } from "@/types/models/card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -56,6 +55,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
+import { useLists } from "@/hooks/useLists";
 
 export default function WordListPage() {
   const { data: session } = useSession();
@@ -63,21 +63,22 @@ export default function WordListPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [deleteCards, setDeleteCards] = useState(false);
+  const { getList, getLists, getAvailableCards, addCardsToList, removeCardsFromList, copyList, deleteListWithCards } = useLists();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const { data: list, isLoading } = useQuery({
-    queryKey: ["wordList", params.id],
+    queryKey: ["wordList", id],
     queryFn: async () => {
-      const { data } = await api.get(`/lists/${params.id}`);
-      return data;
+      return await getList(id);
     },
   });
 
   const { data: hasUserCopied } = useQuery({
-    queryKey: ["hasUserCopied", params.id],
+    queryKey: ["hasUserCopied", id],
     queryFn: async () => {
       if (!list) return false;
-      const { data } = await api.get(`/lists?includePublic=false`);
-      return data.some((userList: any) => 
+      const lists = await getLists(false);
+      return lists.some((userList: any) => 
         userList.name.startsWith(`${list.name} (Copy`)
       );
     },
@@ -86,12 +87,11 @@ export default function WordListPage() {
 
   const copyListMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await api.post('/lists/copy', { sourceListId: params.id });
-      return data;
+      return await copyList(id);
     },
     onSuccess: (newList) => {
       toast.success('List copied successfully!');
-      router.push(`/dashboard/lists/${newList.id}`);
+      router.push(`/dashboard/lists/${(newList as any).id}`);
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
     },
     onError: (error: any) => {
@@ -106,9 +106,7 @@ export default function WordListPage() {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/lists/${params.id}`, {
-        data: { deleteCards }
-      });
+      await deleteListWithCards(id, deleteCards);
       toast.success(deleteCards 
         ? 'List and cards deleted successfully' 
         : 'List deleted successfully. Cards have been preserved.'
@@ -260,7 +258,7 @@ export default function WordListPage() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-        {list.cards.map((card: CardType) => {
+        {((list as any).cards ?? []).map((card: CardType) => {
           const CardContent = (
             <Card className="h-full hover:shadow-lg transition-all group border-transparent hover:border-blue-200">
               <div className="p-3 sm:p-6 flex flex-col h-full">
@@ -338,7 +336,7 @@ export default function WordListPage() {
         })}
       </div>
 
-      {list.cards.length === 0 && (
+      {((list as any).cards ?? []).length === 0 && (
         <Card className="p-4 sm:p-8">
           <div className="text-center">
             <Bookmark className="w-10 h-10 sm:w-12 sm:h-12 text-blue-200 mx-auto mb-3 sm:mb-4" />
@@ -360,6 +358,7 @@ export default function WordListPage() {
 }
 
 function AddCardsDialog({ listId, children }: { listId: string, children: React.ReactNode }) {
+  const { getAvailableCards, addCardsToList } = useLists();
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
@@ -370,14 +369,13 @@ function AddCardsDialog({ listId, children }: { listId: string, children: React.
   const { data: availableCards = [], isLoading } = useQuery({
     queryKey: ["availableCards", listId],
     queryFn: async () => {
-      const { data } = await api.get(`/lists/${listId}/available-cards`);
-      return data;
+      return await getAvailableCards(listId);
     },
   });
 
   const addCardsMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      await api.post(`/lists/${listId}/cards`, { cardIds });
+      await addCardsToList(listId, cardIds);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wordList", listId] });

@@ -18,7 +18,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import api from "@/lib/axios";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -46,6 +45,7 @@ import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 import { useState } from "react";
 import Repeeker_logo from "../../public/repeeker.png";
+import { useStreak } from "@/hooks/useStreak";
 
 const navItems = [
   {
@@ -126,17 +126,6 @@ const navItems = [
   },
 ];
 
-// Add streak query hook
-const useStreak = () => {
-  return useQuery({
-    queryKey: ["streak"],
-    queryFn: async () => {
-      const { data } = await api.get("/streak");
-      return data;
-    },
-  });
-};
-
 // Function to generate breadcrumb items
 const generateBreadcrumbs = (pathname: string) => {
   const paths = pathname.split("/").filter(Boolean);
@@ -199,7 +188,7 @@ export default function AuthenticatedLayout({
   const { data: session, status } = useSession();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openSubmenuHref, setOpenSubmenuHref] = useState<string | null>(null);
-  const { data: streak } = useStreak();
+  const { data: streak } = useStreak({ enabled: status === "authenticated" });
   const pathname = usePathname();
   const breadcrumbs = generateBreadcrumbs(pathname);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -249,65 +238,47 @@ export default function AuthenticatedLayout({
             >
               <Icon
                 className={cn(
-                  "h-4 w-4 flex-shrink-0",
-                  isActive && "text-blue-600 dark:text-blue-400"
+                  "h-5 w-5",
+                  isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
                 )}
               />
-              {(!isCollapsed || isMobile) && (
-                <>
-                  <span
-                    className={cn(
-                      "transition-all duration-200 flex-1",
-                      isActive && "font-medium"
-                    )}
-                  >
-                    {item.title}
-                  </span>
-                  {item.children && (
-                    <ChevronRight
-                      className={cn(
-                        "h-4 w-4 transition-transform",
-                        isSubmenuOpen && "transform rotate-90"
-                      )}
-                    />
+              {(!isMobile || !isCollapsed) && (
+                <span className={cn("flex-1", isCollapsed && "hidden")}>
+                  {item.title}
+                </span>
+              )}
+              {item.children && !isCollapsed && (
+                <ChevronRight
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    isSubmenuOpen && "rotate-90"
                   )}
-                </>
+                />
               )}
             </Link>
-
-            {/* Submenu */}
-            {(!isCollapsed || isMobile) && item.children && isSubmenuOpen && (
-              <div className="ml-4 space-y-1 mt-1">
+            {item.children && isSubmenuOpen && !isCollapsed && (
+              <div className="ml-4 mt-1 space-y-1">
                 {item.children.map((child) => {
                   const ChildIcon = child.icon;
                   const isChildActive = pathname === child.href;
-
                   return (
                     <Link
                       key={child.href}
                       href={child.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                         "hover:bg-gray-100/80 dark:hover:bg-gray-800",
-                        isChildActive
-                          ? "bg-blue-50/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                          : "text-gray-600 dark:text-gray-300"
+                        isChildActive ? "bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-300"
                       )}
-                      onClick={() => {
-                        if (isMobile) {
-                          setIsMobileMenuOpen(false);
-                        }
-                      }}
+                      onClick={() => isMobile && setIsMobileMenuOpen(false)}
                     >
                       <ChildIcon
                         className={cn(
                           "h-4 w-4",
-                          isChildActive && "text-blue-600 dark:text-blue-400"
+                          isChildActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
                         )}
                       />
-                      <span className={isChildActive ? "font-medium" : ""}>
-                        {child.title}
-                      </span>
+                      <span>{child.title}</span>
                     </Link>
                   );
                 })}
@@ -320,215 +291,159 @@ export default function AuthenticatedLayout({
   );
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="flex min-h-screen">
-        {/* Desktop Sidebar */}
+    <QueryProvider>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
         <aside
           className={cn(
-            "hidden md:flex flex-col transition-all duration-300 fixed top-0 left-0 h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 z-40",
+            "hidden md:flex flex-col border-r bg-white dark:bg-gray-950 transition-all duration-300",
             isCollapsed ? "w-16" : "w-64"
           )}
         >
-          <div className="flex h-16 items-center px-4 border-b dark:border-gray-800">
-            <Link
-              href="/"
-              className={cn(
-                "flex items-center font-bold transition-all duration-300",
-                isCollapsed ? "justify-center w-full" : "text-xl"
+          {/* Logo */}
+          <div className="flex h-16 items-center border-b px-4">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <Image
+                src={Repeeker_logo}
+                alt="Repeeker Logo"
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
+              {!isCollapsed && (
+                <span className="text-lg font-semibold">Repeeker</span>
               )}
-            >
-                <Image src={Repeeker_logo} alt="logo" width={50} height={50} />
-             
-              {!isCollapsed && <span className="text-gray-900 dark:text-gray-100">Repeeker</span>}
             </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "absolute",
-                isCollapsed
-                  ? "-right-3 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                  : "right-2 h-8 w-8 hover:bg-gray-100/80 dark:hover:bg-gray-800"
-              )}
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </Button>
           </div>
 
+          {/* Navigation */}
           {renderNavigation()}
 
-          {/* User Profile Section */}
-          <div className={cn("border-t dark:border-gray-800 p-4", isCollapsed ? "px-2" : "px-4")}>
-            <div
-              className={cn(
-                "flex items-center gap-3",
-                isCollapsed && "justify-center"
-              )}
-            >
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center ring-1 ring-gray-200 dark:ring-gray-700">
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
-              {!isCollapsed && (
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {session?.user?.name || "User"}
-                  </p>
-                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                    {session?.user?.email || ""}
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* User Profile */}
+          <div className="mt-auto border-t p-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-3",
+                    isCollapsed && "justify-center px-2"
+                  )}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                    <User className="h-4 w-4" />
+                  </div>
+                  {!isCollapsed && (
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm font-medium">
+                        {session.user?.name}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {session.user?.email}
+                      </span>
+                    </div>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </aside>
 
-        {/* Main content */}
-        <main
-          className={cn(
-            "flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-950",
-            isCollapsed ? "md:ml-16" : "md:ml-64"
-          )}
-        >
-          {/* Header with Breadcrumb and Profile */}
-          <div className="h-16 border-b dark:border-gray-800 flex items-center px-4 md:px-8 bg-white dark:bg-gray-900">
-            {/* Mobile Menu Button */}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden mr-4">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] p-0">
-                <SheetHeader className="px-4 py-4 border-b">
-                  <SheetTitle asChild>
-                    <Link href="/" className="flex items-center gap-2.5 font-bold text-xl focus:outline-none">
-                      <Image
-                        src={Repeeker_logo}
-                        alt="logo"
-                        width={50}
-                        height={50}
-                      />
-                      <span className="text-gray-900">Repeeker</span>
-                    </Link>
-                  </SheetTitle>
-                  <SheetDescription className="text-sm text-gray-500">
-                    Navigate through your learning journey
-                  </SheetDescription>
-                </SheetHeader>
-                {renderNavigation(true)}
-              </SheetContent>
-            </Sheet>
+        {/* Mobile Menu */}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden fixed top-4 left-4 z-50"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0">
+            <div className="flex h-16 items-center border-b px-4">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <Image
+                  src={Repeeker_logo}
+                  alt="Repeeker Logo"
+                  width={32}
+                  height={32}
+                  className="rounded-lg"
+                />
+                <span className="text-lg font-semibold">Repeeker</span>
+              </Link>
+            </div>
+            {renderNavigation(true)}
+          </SheetContent>
+        </Sheet>
 
-            <div className="flex-1">
-              {/* Breadcrumb */}
-              <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 overflow-x-auto">
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          {/* Header */}
+          <header className="sticky top-0 z-40 border-b bg-white dark:bg-gray-950">
+            <div className="flex h-16 items-center justify-between px-4">
+              {/* Breadcrumbs */}
+              <div className="flex items-center gap-2">
                 {breadcrumbs.map((crumb, index) => (
-                  <div
-                    key={crumb.href}
-                    className="flex items-center whitespace-nowrap"
-                  >
+                  <div key={crumb.href} className="flex items-center">
                     {index > 0 && (
-                      <ChevronRightIcon className="h-4 w-4 mx-2 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                      <ChevronRightIcon className="mx-2 h-4 w-4 text-gray-400" />
                     )}
                     <Link
                       href={crumb.href}
                       className={cn(
-                        "hover:text-primary dark:hover:text-blue-400 transition-colors",
+                        "text-sm font-medium",
                         index === breadcrumbs.length - 1
-                          ? "text-gray-900 dark:text-gray-100 font-medium"
-                          : "text-gray-500 dark:text-gray-400"
+                          ? "text-gray-900 dark:text-gray-100"
+                          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
                       )}
                     >
                       {crumb.label}
                     </Link>
                   </div>
                 ))}
-              </nav>
-            </div>
+              </div>
 
-            {/* Profile and Streak */}
-            <div className="flex items-center space-x-4">
-              {/* Streak Display */}
-              {streak && (
-                <div className="hidden sm:flex items-center gap-1.5 text-orange-600 text-sm bg-orange-50 px-2.5 py-1 rounded-full">
-                  <Flame className="h-4 w-4" />
-                  <span className="font-medium">{streak.currentStreak}</span>
+              {/* Streak */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full bg-orange-100 dark:bg-orange-900/30 px-3 py-1">
+                  <Flame className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                    {streak?.currentStreak || 0} day streak
+                  </span>
                 </div>
-              )}
-
-              {/* Profile Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                  >
-                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                        {session?.user?.name?.charAt(0).toUpperCase() || "U"}
-                      </span>
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      {session?.user?.name && (
-                        <p className="font-medium">{session.user.name}</p>
-                      )}
-                      {session?.user?.email && (
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {session.user.email}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/dashboard/profile"
-                      className="w-full cursor-pointer"
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/dashboard/settings"
-                      className="w-full cursor-pointer"
-                    >
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-red-600 cursor-pointer"
-                    onClick={() => signOut()}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              </div>
             </div>
-          </div>
+          </header>
 
-          <QueryProvider>
-            <div className="p-4 md:p-8">{children}</div>
-          </QueryProvider>
+          {/* Page Content */}
+          <div className="p-6">
+            <TooltipProvider>{children}</TooltipProvider>
+          </div>
         </main>
       </div>
-    </TooltipProvider>
+    </QueryProvider>
   );
 }

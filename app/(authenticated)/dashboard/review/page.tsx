@@ -20,10 +20,24 @@ export default function ReviewPage() {
   const [_, forceUpdate] = useState(0);
 
   // Calculate completed cards from the database reviews
-  const completedCount = todayCards?.reviewedTodayTotal || 0;
-  const total = completedCount + (todayCards?.total || 0);
+  let cardsArray: any[] = [];
+  if (Array.isArray(todayCards)) {
+    cardsArray = todayCards;
+  } else if (typeof todayCards === 'object' && todayCards !== null && Array.isArray((todayCards as any).cards)) {
+    cardsArray = (todayCards as any).cards;
+  }
+  const hasCards = cardsArray.length > 0;
+  const total = hasCards ? cardsArray.length : 0;
+  const completedCount = 0; // No reviewedTodayTotal, so default to 0
   const remainingCount = total - completedCount;
   const isCompleted = false; // Always false to allow multiple reviews
+  const hasEnoughCardsForMultipleChoice = total >= 4;
+
+  // Debug logging
+  console.log('todayCards:', todayCards);
+  console.log('cardsArray:', cardsArray);
+  console.log('hasCards:', hasCards);
+  console.log('total:', total);
 
   function getRepeatMode() {
     if (typeof window !== 'undefined') {
@@ -163,7 +177,7 @@ export default function ReviewPage() {
       ) : null}
 
       {/* No cards info message */}
-      {total === 0 && !isLoading && (
+      {(!hasCards && !isLoading) && (
         <div className="flex flex-col items-center justify-center p-6 mb-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
           <span className="text-4xl mb-2">📚</span>
           <p className="text-blue-700 dark:text-blue-400 font-medium">No cards available for review.</p>
@@ -174,8 +188,8 @@ export default function ReviewPage() {
       {/* Mode Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <CardUI 
-          className={`p-6 ${total === 0 || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
-          onClick={() => total > 0 && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('multiple-choice')}
+          className={`p-6 ${!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
+          onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && hasEnoughCardsForMultipleChoice && handleStartSession('multiple-choice')}
         >
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -189,15 +203,15 @@ export default function ReviewPage() {
             <p className="text-gray-600 dark:text-gray-400">
               Test your knowledge with multiple choice questions. Choose the correct definition for each word.
             </p>
-            <Button className="w-full" disabled={total === 0 || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}>
-              {total === 0 ? 'No Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Test'}
+            <Button className="w-full" disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice}>
+              {!hasCards ? 'No Cards' : !hasEnoughCardsForMultipleChoice ? 'Need 4+ Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Test'}
             </Button>
           </div>
         </CardUI>
 
         <CardUI 
-          className={`p-6 ${total === 0 || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
-          onClick={() => total > 0 && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('flashcard')}
+          className={`p-6 ${!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
+          onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('flashcard')}
         >
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -211,8 +225,8 @@ export default function ReviewPage() {
             <p className="text-gray-600 dark:text-gray-400">
               Review words with interactive flashcards. Flip to see definitions and mark if you knew them.
             </p>
-            <Button className="w-full" disabled={total === 0 || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}>
-              {total === 0 ? 'No Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Flashcards'}
+            <Button className="w-full" disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}>
+              {!hasCards ? 'No Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Flashcards'}
             </Button>
           </div>
         </CardUI>

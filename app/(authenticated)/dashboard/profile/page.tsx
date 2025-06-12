@@ -6,31 +6,48 @@ import { Button } from "@/components/ui/button";
 import { Edit, Mail, User, Star, Calendar, Trophy, Flame } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
+
+interface UserData {
+  createdAt: string;
+}
+
+interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+}
+
+interface StatsData {
+  totalCards: number;
+  completedCards: number;
+  reviewStreak: number;
+  successRate: number;
+  totalReviews: number;
+  wordLists: number;
+}
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const { data: userData } = useQuery({
+  const api = useApi();
+
+  const { data: userData } = useQuery<UserData>({
     queryKey: ["user-data"],
     queryFn: async () => {
-      const { data } = await api.get("/user");
-      return data;
+      return api.get("/user");
     },
   });
 
-  const { data: streak } = useQuery({
+  const { data: streak } = useQuery<StreakData>({
     queryKey: ["streak"],
     queryFn: async () => {
-      const { data } = await api.get("/streak");
-      return data;
+      return api.get("/streak");
     },
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<StatsData>({
     queryKey: ["user-stats"],
     queryFn: async () => {
-      const { data } = await api.get("/cards/stats");
-      return data;
+      return api.get("/cards/stats");
     },
   });
 

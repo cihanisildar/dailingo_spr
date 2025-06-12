@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
-import { WordList } from "@/types/card";
+import { useLists } from "@/hooks/useLists";
+import { WordList } from "@/types/models/wordList";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Book, Globe } from "lucide-react";
@@ -12,17 +12,18 @@ import { SearchInput } from "@/components/ui/search-input";
 
 export default function PublicListsPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: lists, isLoading } = useQuery({
+  const { getLists } = useLists();
+  const { data: lists = [], isLoading } = useQuery({
     queryKey: ["publicLists"],
     queryFn: async () => {
-      const { data } = await api.get<WordList[]>("/lists?includePublic=true");
-      return data.filter(list => list.isPublic); // Only show public lists
+      const lists = await getLists(true);
+      return lists.filter((list: WordList) => list.isPublic);
     },
   });
 
   if (isLoading) return <PublicListsSkeleton />;
 
-  const filteredLists = lists?.filter(list => 
+  const filteredLists = lists?.filter((list: WordList) => 
     list.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     list.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -49,7 +50,7 @@ export default function PublicListsPage() {
 
       {/* Lists Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredLists?.map((list) => (
+        {filteredLists?.map((list: WordList) => (
           <Link key={list.id} href={`/dashboard/lists/${list.id}`}>
             <Card className="h-full hover:shadow-lg transition-all group border-transparent hover:border-blue-200">
               <div className="p-6 flex flex-col h-full">

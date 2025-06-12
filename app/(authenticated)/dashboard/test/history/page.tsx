@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Clock, CheckCircle2, XCircle, Calendar, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -34,13 +34,13 @@ const ITEMS_PER_PAGE = 5;
 export default function TestHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const api = useApi();
 
   // Fetch test history
   const { data: testSessions = [], isLoading } = useQuery<TestSession[]>({
     queryKey: ["test-history"],
     queryFn: async () => {
-      const response = await api.get("/test-history");
-      return response.data;
+      return api.get("/test-history");
     },
     staleTime: 0,
     refetchOnMount: true,

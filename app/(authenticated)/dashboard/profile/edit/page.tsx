@@ -10,11 +10,12 @@ import { ArrowLeft, User, Mail, Camera } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
 
 export default function EditProfilePage() {
   const { data: session, update } = useSession();
   const router = useRouter();
+  const api = useApi();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: session?.user?.name || "",

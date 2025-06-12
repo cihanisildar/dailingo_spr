@@ -1,6 +1,8 @@
+import { useCallback } from 'react';
+import { useApi } from './useApi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
-import { Card } from '@/types/card';
+import { Card } from '@/types/models/card';
+import { format } from 'date-fns';
 
 // Query keys
 export const cardKeys = {
@@ -13,35 +15,126 @@ export const cardKeys = {
   upcoming: (days: number) => [...cardKeys.all, 'upcoming', days] as const,
 };
 
-// Hooks
-export function useCards() {
-  return useQuery<Card[]>({
-    queryKey: ["cards"],
-    queryFn: async () => {
-      const response = await api.get("/cards");
-      return response.data;
-    },
-  });
+interface CardStats {
+  totalCards: number;
+  reviewedToday: number;
+  dueToday: number;
+  dueTomorrow: number;
+  currentStreak: number;
+  completedCards: number;
+  activeCards: number;
+  needsReview: number;
 }
 
+interface ExtendedCard extends Card {
+  isFromFailure: boolean;
+  reviewStep: number;
+}
+
+export interface GroupedCards {
+  total: number;
+  reviewed: number;
+  notReviewed: number;
+  fromFailure: number;
+  cards: ExtendedCard[];
+}
+
+interface UpcomingReviewsResponse {
+  data: {
+    cards: Card[];
+    total: number;
+  };
+  status: string;
+  message: string;
+}
+
+interface UpcomingReviews {
+  cards: Record<string, GroupedCards>;
+  total: number;
+  intervals: number[];
+}
+
+export const useCards = () => {
+  const api = useApi();
+
+  const getCards = useCallback(async () => {
+    return api.get<Card[]>('/cards');
+  }, [api]);
+
+  const getCard = useCallback(async (id: string) => {
+    return api.get<Card>(`/cards/${id}`);
+  }, [api]);
+
+  const createCard = useCallback(async (data: Omit<Card, 'id'>) => {
+    return api.post<Card>('/cards', data);
+  }, [api]);
+
+  const updateCard = useCallback(async (id: string, data: Partial<Card>) => {
+    return api.put<Card>(`/cards/${id}`, data);
+  }, [api]);
+
+  const deleteCard = useCallback(async (id: string) => {
+    return api.delete<{ message: string }>(`/cards/${id}`);
+  }, [api]);
+
+  const getTodayCards = useCallback(async () => {
+    return api.get<Card[]>('/cards/today');
+  }, [api]);
+
+  const getUpcomingCards = useCallback(async () => {
+    return api.get<Card[]>('/cards/upcoming');
+  }, [api]);
+
+  const getCardStats = useCallback(async () => {
+    return api.get<CardStats>('/cards/stats');
+  }, [api]);
+
+  const submitCardResult = useCallback(async (data: {
+    wordId: string;
+    isCorrect: boolean;
+    timeSpent: number;
+    isPublicCard?: boolean;
+  }) => {
+    return api.post<{ success: boolean }>('/word-result', data);
+  }, [api]);
+
+  const importCards = useCallback(async (data: FormData | { text: string }) => {
+    return api.post<{ success: number; failed: number; errors: string[] }>('/cards/import', data);
+  }, [api]);
+
+  return {
+    getCards,
+    getCard,
+    createCard,
+    updateCard,
+    deleteCard,
+    getTodayCards,
+    getUpcomingCards,
+    getCardStats,
+    submitCardResult,
+    importCards,
+  };
+};
+
+// Hooks
 export function useTodayCards(options?: { repeat?: boolean }) {
+  const api = useApi();
   const repeat = options?.repeat;
   return useQuery({
     queryKey: [...cardKeys.today(), { repeat }],
     queryFn: async () => {
       const url = repeat ? '/cards/today?repeat=true' : '/cards/today';
-      const { data } = await api.get(url);
-      return data;
+      return api.get<Card[]>(url);
     },
   });
 }
 
 export function useCard(id: string) {
+  const api = useApi();
   return useQuery({
     queryKey: cardKeys.detail(id),
     queryFn: async () => {
-      const { data } = await api.get<Card>(`/cards/${id}`);
-      return data;
+      return api.get<Card>(`/cards/${id}`);
     },
   });
 }
@@ -53,11 +146,11 @@ interface CreateCardData {
 
 export function useCreateCard() {
   const queryClient = useQueryClient();
+  const api = useApi();
 
   return useMutation({
     mutationFn: async (data: CreateCardData) => {
-      const response = await api.post("/cards", data);
-      return response.data;
+      return api.post<Card>("/cards", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cards"] });
@@ -67,11 +160,11 @@ export function useCreateCard() {
 
 export function useUpdateCard() {
   const queryClient = useQueryClient();
+  const api = useApi();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Card> }) => {
-      const response = await api.put<Card>(`/cards/${id}`, data);
-      return response.data;
+      return api.put<Card>(`/cards/${id}`, data);
     },
     onMutate: async ({ id, data }) => {
       // Cancel any outgoing refetches
@@ -119,6 +212,7 @@ export function useUpdateCard() {
 
 export function useDeleteCard() {
   const queryClient = useQueryClient();
+  const api = useApi();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -163,11 +257,11 @@ export function useDeleteCard() {
 
 export function useUpdateReview() {
   const queryClient = useQueryClient();
+  const api = useApi();
 
   return useMutation({
     mutationFn: async ({ cardId, isSuccess }: { cardId: string; isSuccess: boolean }) => {
-      const { data } = await api.post('/cards/review', { cardId, isSuccess });
-      return data;
+      return api.post('/cards/review', { cardId, isSuccess });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardKeys.today() });
@@ -176,12 +270,24 @@ export function useUpdateReview() {
   });
 }
 
-export function useUpcomingReviews<T = any>() {
-  return useQuery<T>({
+export function useUpcomingReviews() {
+  const api = useApi();
+  return useQuery<UpcomingReviews>({
     queryKey: cardKeys.upcoming(365),
     queryFn: async () => {
-      const { data } = await api.get(`/cards/upcoming?days=365`);
-      return data;
+      const response = await api.get<UpcomingReviews>(`/cards/upcoming?days=365`);
+      if (
+        response &&
+        typeof response === "object" &&
+        response.cards &&
+        typeof response.cards === "object" &&
+        !Array.isArray(response.cards) &&
+        "intervals" in response &&
+        "total" in response
+      ) {
+        return response as UpcomingReviews;
+      }
+      return { cards: {}, total: 0, intervals: [] };
     },
   });
 } 

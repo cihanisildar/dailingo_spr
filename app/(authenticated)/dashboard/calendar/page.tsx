@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { CustomCalendar } from '@/components/ui/custom-calendar';
-import api from '@/lib/axios';
+import { useApi } from '@/hooks/useApi';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -17,21 +17,22 @@ interface WordCard {
 
 // Custom hook to fetch calendar data
 const useCalendarData = (selectedDate: Date) => {
+  const api = useApi();
   const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
   const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
 
   return useQuery({
     queryKey: ['calendar-data', startOfMonth, endOfMonth],
     queryFn: async () => {
-      const { data } = await api.get<WordCard[]>('/cards', {
-        params: {
-          createdAfter: startOfMonth.toISOString(),
-          createdBefore: endOfMonth.toISOString(),
-        },
+      const queryParams = new URLSearchParams({
+        createdAfter: startOfMonth.toISOString(),
+        createdBefore: endOfMonth.toISOString(),
       });
       
+      const data = await api.get<WordCard[]>(`/cards?${queryParams.toString()}`);
+      
       // Group cards by creation date
-      const cardsByDate = data.reduce((acc: Record<string, WordCard[]>, card) => {
+      const cardsByDate = data.reduce((acc: Record<string, WordCard[]>, card: WordCard) => {
         const date = format(new Date(card.createdAt), 'yyyy-MM-dd');
         if (!acc[date]) {
           acc[date] = [];
@@ -121,7 +122,7 @@ export default function CalendarPage() {
     );
   };
 
-  const totalWords = Object.values(cardsPerDay).reduce((sum, cards) => sum + (cards as WordCard[]).length, 0);
+  const totalWords = Object.values(cardsPerDay).reduce((sum: number, cards) => sum + (cards as WordCard[]).length, 0);
 
   return (
     <div className="space-y-6">

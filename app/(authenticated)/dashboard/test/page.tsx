@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import api from "@/lib/axios";
+import { useApi } from "@/hooks/useApi";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, BookOpen, CheckCircle2, Clock, GraduationCap, HelpCircle, Shuffle, TrendingUp, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -63,6 +63,7 @@ export default function TestPage() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const api = useApi();
   const [testMode, setTestMode] = useState<TestMode>("all");
   const [studyMode, setStudyMode] = useState<StudyMode>("multiple-choice");
   const [isTestStarted, setIsTestStarted] = useState(false);
@@ -109,25 +110,23 @@ export default function TestPage() {
     }
   }, [currentWordIndex, words, isFlipped]);
 
-  // Fetch today's words to check if any exist
-  const { data: todayWords = [], isLoading: isTodayWordsLoading } = useQuery<Word[]>({
-    queryKey: ["test-words", "today"],
+  // Fetch today's words
+  const { data: todayWords = [] } = useQuery<Word[]>({
+    queryKey: ["words", "today"],
     queryFn: async () => {
-      const response = await api.get(`/words/today`);
-      return response.data;
+      return api.get("/cards/today");
     },
   });
 
-  // Fetch words based on test mode
-  const { data: allWords = [], isLoading: isAllWordsLoading, refetch } = useQuery<Word[]>({
-    queryKey: ["test-words", testMode],
+  // Fetch all words
+  const { data: allWords = [] } = useQuery<Word[]>({
+    queryKey: ["words"],
     queryFn: async () => {
-      const response = await api.get(`/words/${testMode}`);
-      return response.data;
+      return api.get("/cards");
     },
   });
 
-  const isLoading = isTodayWordsLoading || isAllWordsLoading;
+  const isLoading = !todayWords || !allWords;
 
   // Update question amount when allWords changes
   useEffect(() => {
@@ -240,8 +239,6 @@ export default function TestPage() {
 
   const startTest = async () => {
     try {
-      await refetch();
-      
       if (!hasWords) {
         toast.error('No words available for testing');
         return;

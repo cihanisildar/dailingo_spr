@@ -1,13 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "@/lib/axios";
-import { WordList } from "@/types/card";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Book, Plus } from "lucide-react";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,27 +12,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useLists } from "@/hooks/useLists";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Book, Plus } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "react-hot-toast";
-import { SearchInput } from "@/components/ui/search-input";
 
 export default function WordListsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { getLists } = useLists();
   const { data: lists, isLoading } = useQuery({
     queryKey: ["wordLists"],
-    queryFn: async () => {
-      const { data } = await api.get<WordList[]>("/lists");
-      return data;
-    },
+    queryFn: () => getLists()
   });
 
   if (isLoading) return <WordListsSkeleton />;
@@ -121,11 +118,11 @@ function CreateListDialog() {
   const [description, setDescription] = useState("");
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { createList } = useLists();
 
   const createListMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string; isPublic: boolean }) => {
-      const response = await api.post("/lists", data);
-      return response.data;
+    mutationFn: (data: { name: string; description: string; isPublic: boolean }) => {
+      return createList(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });

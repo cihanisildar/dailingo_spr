@@ -1,108 +1,124 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/prisma/prisma";
-import { Adapter } from "next-auth/adapters";
-import bcrypt from "bcryptjs";
+import { ApiResponse } from '@/types/api';
+import jwt from 'jsonwebtoken';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  image?: string;
+}
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Please enter your email and password");
+          return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true
+        try {
+          console.log('[DEBUG] Attempting login with:', { email: credentials.email });
+          
+          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password
+            }),
+            credentials: 'include'
+          });
+
+          const result = await response.json() as ApiResponse<User>;
+          console.log('[DEBUG] Login response:', result);
+
+          if (result.status === 'error' || !response.ok) {
+            console.log('[DEBUG] Login failed:', result);
+            return null;
           }
-        });
 
-        if (!user?.password) {
-          throw new Error("No user found with this email");
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid password");
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
-      }
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "select_account",
-          access_type: "offline",
-          response_type: "code"
+          if (result.data) {
+            // Return the user object in the format NextAuth expects
+            return {
+              id: result.data.id,
+              email: result.data.email,
+              name: result.data.name,
+              image: result.data.image || null,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error("[DEBUG] Auth error:", error);
+          return null;
         }
       }
-    }),
+    })
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
   pages: {
     signIn: "/auth/signin",
-    error: "/auth/signin"
-  },
-  session: {
-    strategy: "jwt"
+    error: "/auth/error",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Allow OAuth without email verification
-      if (account?.provider === "google") {
-        return true;
+    async jwt({ token, user }) {
+      console.log('[DEBUG] JWT Callback - Input:', { token, user });
+      
+      // On first login, user is present
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
       }
-
-      // For credentials, check if user exists and has password
-      if (account?.provider === "credentials") {
-        return true;
+      
+      // Always generate a JWT for accessToken if we have the info
+      if (token.id && token.email) {
+        console.log('[DEBUG] JWT Callback - Generating access token with:', {
+          id: token.id,
+          email: token.email,
+          name: token.name,
+          secret: process.env.NEXTAUTH_SECRET ? 'exists' : 'missing'
+        });
+        
+        token.accessToken = jwt.sign(
+          { id: token.id, email: token.email, name: token.name },
+          process.env.NEXTAUTH_SECRET!,
+          { expiresIn: '30d' }
+        );
       }
-
-      return false;
-    },
-    jwt: async ({ token, trigger, session }) => {
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
-      }
-      if (trigger === "update" && session?.email) {
-        token.email = session.email;
-      }
+      
+      console.log('[DEBUG] JWT Callback - Output token:', token);
       return token;
     },
-    session: async ({ session, token }) => {
-      if (session?.user) {
-        session.user.id = token.sub!;
-        session.user.name = token.name;
+    async session({ session, token }) {
+      console.log('[DEBUG] Session Callback - Input:', { session, token });
+      
+      if (session.user) {
+        session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        session.user.image = token.picture as string;
       }
+      session.accessToken = token.accessToken as string;
+      
+      console.log('[DEBUG] Session Callback - Output session:', session);
       return session;
-    },
-    redirect: async ({ url, baseUrl }) => {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    },
+    }
   },
-  debug: false,
   secret: process.env.NEXTAUTH_SECRET,
-};
+  debug: process.env.NODE_ENV === 'development',
+}

@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
+import { Card as UICard } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +23,6 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import api from "@/lib/axios";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -45,6 +44,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLists } from "@/hooks/useLists";
+import { Card as CardType } from "@/types/models";
 
 interface WordList {
   id: string;
@@ -52,7 +53,7 @@ interface WordList {
   description: string;
   isPublic: boolean;
   userId: string;
-  cards?: any[];
+  cards: CardType[];
   createdAt: string;
   updatedAt: string;
 }
@@ -70,13 +71,14 @@ export default function EditListPage() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+  const { getList, updateList, getListCards, getAvailableCards, addCardsToList, removeCardsFromList } = useLists();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   // Fetch list data
   const { data: list, isLoading } = useQuery({
-    queryKey: ["wordList", params.id],
+    queryKey: ["wordList", id],
     queryFn: async () => {
-      const { data } = await api.get(`/lists/${params.id}`);
-      return data;
+      return await getList(id);
     },
   });
 
@@ -94,14 +96,10 @@ export default function EditListPage() {
   // Update list mutation
   const updateListMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      console.log('Mutation function called with data:', data);
-      // Validate data before sending
       if (!data.name.trim()) {
         throw new Error('List name cannot be empty');
       }
-      const response = await api.put<WordList>(`/lists/${params.id}`, data);
-      console.log('Server response:', response.data);
-      return response.data;
+      return await updateList(id, data);
     },
     onMutate: async (newData) => {
       console.log('onMutate starting with new data:', newData);
@@ -111,11 +109,11 @@ export default function EditListPage() {
       }
       
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["wordList", params.id] });
+      await queryClient.cancelQueries({ queryKey: ["wordList", id] });
       await queryClient.cancelQueries({ queryKey: ["wordLists"] });
 
       // Snapshot the previous values
-      const previousList = queryClient.getQueryData<WordList>(["wordList", params.id]);
+      const previousList = queryClient.getQueryData<WordList>(["wordList", id]);
       console.log('Previous list state:', previousList);
       const previousLists = queryClient.getQueryData<WordList[]>(["wordLists"]);
 
@@ -129,12 +127,12 @@ export default function EditListPage() {
           updatedAt: new Date().toISOString()
         };
         console.log('Optimistically updated list:', updatedList);
-        queryClient.setQueryData(["wordList", params.id], updatedList);
+        queryClient.setQueryData(["wordList", id], updatedList);
       }
 
       if (previousLists) {
         const updatedLists = previousLists.map(list =>
-          list.id === params.id
+          list.id === id
             ? {
                 ...list,
                 name: newData.name.trim(),
@@ -155,7 +153,7 @@ export default function EditListPage() {
       // If the mutation fails, use the context to roll back
       if (context?.previousList) {
         console.log('Rolling back to previous list:', context.previousList);
-        queryClient.setQueryData(["wordList", params.id], context.previousList);
+        queryClient.setQueryData(["wordList", id], context.previousList);
       }
       if (context?.previousLists) {
         queryClient.setQueryData(["wordLists"], context.previousLists);
@@ -165,7 +163,7 @@ export default function EditListPage() {
     onSuccess: (updatedList) => {
       console.log('Update successful, received data:', updatedList);
       // Update all related queries with the new data
-      queryClient.setQueryData(["wordList", params.id], updatedList);
+      queryClient.setQueryData(["wordList", id], updatedList);
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
       queryClient.invalidateQueries({ queryKey: ["publicLists"] });
       toast.success("List updated successfully");
@@ -173,7 +171,7 @@ export default function EditListPage() {
     onSettled: () => {
       console.log('Update settled, invalidating queries');
       // Always refetch after error or success to ensure cache consistency
-      queryClient.invalidateQueries({ queryKey: ["wordList", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["wordList", id] });
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
       queryClient.invalidateQueries({ queryKey: ["publicLists"] });
     }
@@ -182,12 +180,12 @@ export default function EditListPage() {
   // Remove cards mutation
   const removeCardsMutation = useMutation({
     mutationFn: async (cardIds: string[]) => {
-      await api.post(`/lists/${params.id}/remove-cards`, { cardIds });
+      await removeCardsFromList(id, cardIds);
     },
     onSuccess: () => {
       toast.success("Cards removed successfully");
       // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ["wordList", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["wordList", id] });
       queryClient.invalidateQueries({ queryKey: ["wordLists"] });
       queryClient.invalidateQueries({ queryKey: ["cards"] });
       setSelectedCards([]);
@@ -219,8 +217,8 @@ export default function EditListPage() {
   };
 
   // Filtered and paginated cards
-  const filteredCards = list?.cards?.filter(
-    (card: any) =>
+  const filteredCards = (list?.cards ?? []).filter(
+    (card: CardType) =>
       card.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
       card.definition.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -299,7 +297,7 @@ export default function EditListPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* List Details Form */}
-        <Card className="lg:col-span-1 overflow-hidden">
+        <UICard className="lg:col-span-1 overflow-hidden">
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">List Details</h2>
             <form className="space-y-4">
@@ -364,10 +362,10 @@ export default function EditListPage() {
               </div>
             </form>
           </div>
-        </Card>
+        </UICard>
 
         {/* Cards Management */}
-        <Card className="lg:col-span-2 overflow-hidden">
+        <UICard className="lg:col-span-2 overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Manage Cards</h2>
@@ -421,7 +419,7 @@ export default function EditListPage() {
                   </div>
                 ) : (
                   <>
-                    {currentCards?.map((card: any) => (
+                    {currentCards?.map((card: CardType) => (
                       <div
                         key={card.id}
                         className={cn(
@@ -524,7 +522,7 @@ export default function EditListPage() {
               </div>
             </div>
           </div>
-        </Card>
+        </UICard>
       </div>
     </div>
   );
