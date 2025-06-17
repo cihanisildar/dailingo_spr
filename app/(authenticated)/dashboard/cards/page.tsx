@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input";
 import { useCards } from "@/hooks/useCards";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle, Clock, Search, XCircle } from "lucide-react";
+import { CheckCircle, Clock, Search, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+
+const ITEMS_PER_PAGE = 9;
 
 export default function CardsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const { getCards } = useCards();
 
   const { data: cards, isLoading } = useQuery({
@@ -34,35 +37,50 @@ export default function CardsPage() {
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil((filteredCards?.length || 0) / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedCards = filteredCards?.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset to first page when filters change
+  const handleFilterChange = (value: string) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-2 sm:px-4 md:px-8 max-w-3xl mx-auto w-full">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 sm:p-8">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-white">Your Cards</h1>
-              <p className="text-blue-100 mt-1">Manage and organize your vocabulary cards.</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">Your Cards</h1>
+              <p className="text-blue-100 mt-1 text-sm sm:text-base">Manage and organize your vocabulary cards.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <ImportCardsDialog />
               <CreateCardDialog />
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search cards..."
-                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-blue-100"
+                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-blue-100 w-full"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+              onChange={(e) => handleFilterChange(e.target.value)}
+              className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/20 w-full sm:w-auto"
             >
               <option value="all">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -74,15 +92,15 @@ export default function CardsPage() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCards?.map((card) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {paginatedCards?.map((card) => (
           <Link key={card.id} href={`/dashboard/cards/${card.id}`}>
-            <Card className="p-6 hover:shadow-lg transition-all cursor-pointer">
+            <Card className="p-4 sm:p-6 hover:shadow-lg transition-all cursor-pointer min-h-[160px] flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{card.word}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                  <div className="min-w-0">
+                    <h3 className="font-medium text-gray-900 truncate">{card.word}</h3>
+                    <p className="text-sm text-gray-600 line-clamp-2 mt-1 break-words">
                       {card.definition}
                     </p>
                   </div>
@@ -97,7 +115,7 @@ export default function CardsPage() {
                     {card.reviewStatus.toLowerCase()}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <div className="flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-emerald-500" />
                     <span>{card.successCount}</span>
@@ -108,7 +126,7 @@ export default function CardsPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>Next: {new Date(card.nextReview).toLocaleDateString()}</span>
+                    <span className="truncate">Next: {new Date(card.nextReview).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -128,6 +146,29 @@ export default function CardsPage() {
               ? "Try adjusting your search or filter criteria"
               : "Create your first card to get started"}
           </p>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       )}
     </div>

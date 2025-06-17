@@ -12,19 +12,14 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+  SheetTrigger
 } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useStreak } from "@/hooks/useStreak";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import {
   Calendar,
-  ChevronLeft,
   ChevronRight,
-  ChevronRight as ChevronRightIcon,
   Clock,
   CreditCard,
   Flame,
@@ -45,7 +40,6 @@ import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 import { useState } from "react";
 import Repeeker_logo from "../../public/repeeker.png";
-import { useStreak } from "@/hooks/useStreak";
 
 const navItems = [
   {
@@ -321,19 +315,140 @@ export default function AuthenticatedLayout({
 
           {/* User Profile */}
           <div className="mt-auto border-t p-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start gap-3",
-                    isCollapsed && "justify-center px-2"
-                  )}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                    <User className="h-4 w-4" />
+            <div className={cn(
+              "w-full flex items-center gap-3",
+              isCollapsed && "justify-center px-2"
+            )}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                <User className="h-4 w-4" />
+              </div>
+              {!isCollapsed && (
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">
+                    {session.user?.name}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {session.user?.email}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          {/* Sheet wraps the header for mobile menu */}
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            {/* Header */}
+            <header className="sticky top-0 z-40 border-b bg-white dark:bg-gray-950">
+              <div className="flex h-14 sm:h-16 items-center justify-between px-2 sm:px-4">
+                {/* Left: Mobile Menu Button (visible only on mobile) */}
+                <div className="flex items-center gap-2 md:hidden">
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                    >
+                      <Menu className="h-6 w-6" />
+                    </Button>
+                  </SheetTrigger>
+                </div>
+                {/* Breadcrumbs - only visible on md+ */}
+                <div className="hidden md:flex items-center gap-2 flex-1 min-w-0">
+                  {breadcrumbs.map((crumb, index) => (
+                    <div key={crumb.href} className="flex items-center">
+                      {index > 0 && (
+                        <ChevronRight className="mx-2 h-4 w-4 text-gray-400" />
+                      )}
+                      <Link
+                        href={crumb.href}
+                        className={cn(
+                          "text-sm font-medium truncate max-w-[120px]",
+                          index === breadcrumbs.length - 1
+                            ? "text-gray-900 dark:text-gray-100"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                        )}
+                      >
+                        {crumb.label}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+                {/* Right: Streak and Profile Icon */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-1 gap-1 min-w-[32px]">
+                    <Flame className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-sm font-medium text-orange-600 dark:text-orange-400">{streak?.currentStreak || 0}</span>
                   </div>
-                  {!isCollapsed && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="p-0 group"
+                        style={{ background: 'none', boxShadow: 'none' }}
+                      >
+                        <div 
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 transition-colors cursor-pointer group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
+                        >
+                          <User className="h-4 w-4 text-gray-600 dark:text-gray-300 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                        </div>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/profile">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href="/dashboard/settings">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="text-red-600 dark:text-red-400 cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </header>
+            {/* SheetContent for mobile menu */}
+            <SheetContent side="left" className="p-0">
+              <div className="flex flex-col h-full">
+                <div className="flex h-16 items-center border-b px-4">
+                  <Link href="/dashboard" className="flex items-center gap-2">
+                    <Image
+                      src={Repeeker_logo}
+                      alt="Repeeker Logo"
+                      width={32}
+                      height={32}
+                      className="rounded-lg"
+                    />
+                    <span className="text-lg font-semibold">Repeeker</span>
+                  </Link>
+                </div>
+                <div className="flex-1">
+                  {renderNavigation(true)}
+                </div>
+                {/* User Profile for Mobile */}
+                <div className="border-t p-4 md:hidden">
+                  <div className={cn(
+                    "w-full flex items-center gap-3",
+                  )}>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                      <User className="h-4 w-4" />
+                    </div>
                     <div className="flex flex-col items-start">
                       <span className="text-sm font-medium">
                         {session.user?.name}
@@ -342,102 +457,11 @@ export default function AuthenticatedLayout({
                         {session.user?.email}
                       </span>
                     </div>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="text-red-600 dark:text-red-400"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </aside>
-
-        {/* Mobile Menu */}
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden fixed top-4 left-4 z-50"
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0">
-            <div className="flex h-16 items-center border-b px-4">
-              <Link href="/dashboard" className="flex items-center gap-2">
-                <Image
-                  src={Repeeker_logo}
-                  alt="Repeeker Logo"
-                  width={32}
-                  height={32}
-                  className="rounded-lg"
-                />
-                <span className="text-lg font-semibold">Repeeker</span>
-              </Link>
-            </div>
-            {renderNavigation(true)}
-          </SheetContent>
-        </Sheet>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
-          {/* Header */}
-          <header className="sticky top-0 z-40 border-b bg-white dark:bg-gray-950">
-            <div className="flex h-16 items-center justify-between px-4">
-              {/* Breadcrumbs */}
-              <div className="flex items-center gap-2">
-                {breadcrumbs.map((crumb, index) => (
-                  <div key={crumb.href} className="flex items-center">
-                    {index > 0 && (
-                      <ChevronRightIcon className="mx-2 h-4 w-4 text-gray-400" />
-                    )}
-                    <Link
-                      href={crumb.href}
-                      className={cn(
-                        "text-sm font-medium",
-                        index === breadcrumbs.length - 1
-                          ? "text-gray-900 dark:text-gray-100"
-                          : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-                      )}
-                    >
-                      {crumb.label}
-                    </Link>
                   </div>
-                ))}
-              </div>
-
-              {/* Streak */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 rounded-full bg-orange-100 dark:bg-orange-900/30 px-3 py-1">
-                  <Flame className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                  <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                    {streak?.currentStreak || 0} day streak
-                  </span>
                 </div>
               </div>
-            </div>
-          </header>
-
+            </SheetContent>
+          </Sheet>
           {/* Page Content */}
           <div className="p-6">
             <TooltipProvider>{children}</TooltipProvider>

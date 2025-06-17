@@ -115,9 +115,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="pt-0">
       {/* Mobile Navigation */}
-      <div className="lg:hidden">
+      <div className="lg:hidden mb-4">
         <div className="grid grid-cols-4 gap-3 px-1">
           <Link href="/dashboard/review">
             <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/review' ? 'bg-emerald-900/20 border-emerald-800 dark:bg-emerald-900/30' : 'hover:bg-emerald-900/10 dark:hover:bg-emerald-900/20'}`}>
@@ -161,10 +161,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-orange-900/10 dark:bg-orange-900/20">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+        <Card className="p-6 bg-orange-100 dark:bg-orange-900/30">
           <div className="flex items-center gap-4">
-            <div className="bg-orange-900/20 dark:bg-orange-900/30 p-3 rounded-lg">
+            <div className="bg-white/80 dark:bg-orange-900/50 p-3 rounded-lg">
               <Flame className="w-6 h-6 text-orange-400" />
             </div>
             <div>
@@ -174,9 +174,9 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-blue-900/10 dark:bg-blue-900/20">
+        <Card className="p-6 bg-blue-100 dark:bg-blue-900/30">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-900/20 dark:bg-blue-900/30 p-3 rounded-lg">
+            <div className="bg-white/80 dark:bg-blue-900/50 p-3 rounded-lg">
               <Clock className="w-6 h-6 text-blue-400" />
             </div>
             <div>
@@ -186,9 +186,9 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-emerald-900/10 dark:bg-emerald-900/20">
+        <Card className="p-6 bg-emerald-100 dark:bg-emerald-900/30">
           <div className="flex items-center gap-4">
-            <div className="bg-emerald-900/20 dark:bg-emerald-900/30 p-3 rounded-lg">
+            <div className="bg-white/80 dark:bg-emerald-900/50 p-3 rounded-lg">
               <BookOpen className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
@@ -198,9 +198,9 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-purple-900/10 dark:bg-purple-900/20">
+        <Card className="p-6 bg-purple-100 dark:bg-purple-900/30">
           <div className="flex items-center gap-4">
-            <div className="bg-purple-900/20 dark:bg-purple-900/30 p-3 rounded-lg">
+            <div className="bg-white/80 dark:bg-purple-900/50 p-3 rounded-lg">
               <ListChecks className="w-6 h-6 text-purple-400" />
             </div>
             <div>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         {/* Learning Progress */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -304,7 +304,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
         <Link href="/dashboard/review">
           <Card className="p-6 hover:shadow-lg transition-all group">
             <div className="flex items-center justify-between">
