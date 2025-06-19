@@ -17,7 +17,7 @@ interface TestSession {
 }
 
 interface TestResult {
-  wordId: string;
+  cardId: string;
   isCorrect: boolean;
   timeSpent: number;
 }
@@ -29,19 +29,22 @@ export const useTest = () => {
     cardIds: string[];
     mode: 'word' | 'definition';
   }) => {
-    return api.post<{ sessionId: string }>('/test-session', data);
+    console.log('useTest startTest called with:', data);
+    const response = await api.post<TestSession>('/test-sessions', data);
+    console.log('useTest startTest response:', response);
+    return { sessionId: response.id };
   }, [api]);
 
-  const submitTestResults = useCallback(async (sessionId: string, results: TestResult[]) => {
-    return api.post<TestSession>(`/test-session/${sessionId}/results`, { results });
+  const submitTestResults = useCallback(async (sessionId: string, result: TestResult) => {
+    return api.post<TestSession>(`/test-sessions/${sessionId}/results`, result);
   }, [api]);
 
   const getTestHistory = useCallback(async () => {
-    return api.get<TestSession[]>('/test-history');
+    return api.get<TestSession[]>('/test-sessions');
   }, [api]);
 
   const getTestSession = useCallback(async (sessionId: string) => {
-    return api.get<TestSession>(`/test-session/${sessionId}`);
+    return api.get<TestSession>(`/test-sessions/${sessionId}`);
   }, [api]);
 
   return {

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import toast from "react-hot-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Inbox } from "lucide-react";
 
 // Remove Prisma import and define Card interface
 interface Card {
@@ -67,7 +67,6 @@ export default function AddToReview() {
   });
 
   const handleAddToReview = () => {
-    console.log("handleAddToReview called with selected cards:", Array.from(selectedCards));
     addToReviewMutation.mutate(Array.from(selectedCards));
   };
 
@@ -78,67 +77,87 @@ export default function AddToReview() {
     } else {
       newSelection.add(cardId);
     }
-    console.log("Card selection toggled. New selection:", Array.from(newSelection));
     setSelectedCards(newSelection);
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[200px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex justify-center items-center min-h-[300px] w-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Add Words to Review</h1>
-        <Button
-          onClick={handleAddToReview}
-          disabled={selectedCards.size === 0 || addToReviewMutation.isPending}
-        >
-          {addToReviewMutation.isPending && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          )}
-          Add Selected to Review
-        </Button>
-      </div>
+    <div className="w-full min-h-[80vh] px-0">
+      <div className="w-full bg-white dark:bg-zinc-900 rounded-none shadow-none p-4 md:p-8">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1">Add Words to Review</h1>
+            <p className="text-muted-foreground text-base md:text-lg">Select words from your collection to add to your review session.</p>
+          </div>
+          <Button
+            onClick={handleAddToReview}
+            disabled={selectedCards.size === 0 || addToReviewMutation.isPending}
+            className="h-12 px-8 text-lg font-semibold shadow-md transition-transform hover:scale-[1.03]"
+          >
+            {addToReviewMutation.isPending && (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            )}
+            Add Selected to Review
+          </Button>
+        </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Select</TableHead>
-              <TableHead>Word</TableHead>
-              <TableHead>Definition</TableHead>
-              <TableHead>Last Reviewed</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cards?.map((card) => (
-              <TableRow key={card.id}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedCards.has(card.id)}
-                    onChange={() => toggleCardSelection(card.id)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">{card.word}</TableCell>
-                <TableCell>{card.definition}</TableCell>
-                <TableCell>
-                  {card.lastReviewed
-                    ? new Date(card.lastReviewed).toLocaleDateString()
-                    : "Never"}
-                </TableCell>
-                <TableCell>{card.reviewStatus}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="border rounded-xl overflow-x-auto bg-background">
+          {cards && cards.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/60">
+                  <TableHead className="w-12">Select</TableHead>
+                  <TableHead>Word</TableHead>
+                  <TableHead>Definition</TableHead>
+                  <TableHead>Last Reviewed</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cards.map((card, idx) => (
+                  <TableRow
+                    key={card.id}
+                    className={
+                      `transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-muted/40 dark:bg-zinc-800'} hover:bg-primary/10 dark:hover:bg-primary/20`}
+                  >
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedCards.has(card.id)}
+                        onChange={() => toggleCardSelection(card.id)}
+                        className="h-4 w-4 rounded border-gray-300 accent-primary focus:ring-2 focus:ring-primary"
+                      />
+                    </TableCell>
+                    <TableCell className="font-semibold text-base">{card.word}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{card.definition}</TableCell>
+                    <TableCell className="text-sm">
+                      {card.lastReviewed
+                        ? new Date(card.lastReviewed).toLocaleDateString()
+                        : <span className="italic text-zinc-400">Never</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                        {card.reviewStatus}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Inbox className="w-16 h-16 text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground font-medium">No cards found. Add some words to your collection first!</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

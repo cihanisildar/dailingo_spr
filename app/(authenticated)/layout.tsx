@@ -30,6 +30,7 @@ import {
   List,
   LogOut,
   Menu,
+  Plus,
   ScrollText,
   Settings,
   User
@@ -56,6 +57,11 @@ const navItems = [
         title: "Today's Review",
         href: "/dashboard/review",
         icon: Clock,
+      },
+      {
+        title: "Add Review",
+        href: "/dashboard/review/add",
+        icon: Plus,
       },
       {
         title: "Upcoming Reviews",

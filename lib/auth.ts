@@ -79,6 +79,41 @@ export const authOptions: NextAuthOptions = {
     error: "/auth/error",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      console.log('[DEBUG] signIn callback triggered', { provider: account?.provider, user, profile });
+
+      if (account?.provider === 'google' && user) {
+        try {
+          console.log('[DEBUG] Attempting to sync Google user to backend:', { email: user.email, name: user.name, id: profile?.sub });
+
+          const response = await fetch('https://repeekerserver-production.up.railway.app/api/auth/sync-google-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              id: profile?.sub, // Google's unique user ID
+              email: user.email,
+              name: user.name,
+              image: user.image,
+            }),
+          });
+
+          const result = await response.json();
+          console.log('[DEBUG] Sync response:', result);
+
+          if (result.status === 'error' && !response.ok) {
+            console.error('[DEBUG] Failed to sync user to backend:', result);
+          }
+        } catch (error) {
+          console.error('[DEBUG] Error syncing user to backend:', error);
+        }
+      } else {
+        console.log('[DEBUG] signIn callback: Not a Google provider or user missing');
+      }
+
+      return true;
+    },
     async jwt({ token, user }) {
       console.log('[DEBUG] JWT Callback - Input:', { token, user });
       

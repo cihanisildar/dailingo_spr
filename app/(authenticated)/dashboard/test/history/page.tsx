@@ -14,19 +14,47 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-interface TestSession {
+interface TestResult {
   id: string;
+  sessionId: string;
+  cardId: string;
+  isCorrect: boolean;
+  timeSpent: number;
   createdAt: string;
-  totalQuestions: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  averageTime: number;
-  results: {
+  card: {
+    id: string;
     word: string;
     definition: string;
-    isCorrect: boolean;
-    timeSpent: number;
-  }[];
+    viewCount: number;
+    successCount: number;
+    failureCount: number;
+    lastReviewed: string;
+    nextReview: string;
+    reviewStatus: string;
+    reviewStep: number;
+    createdAt: string;
+    updatedAt: string;
+    userId: string;
+    wordListId: string;
+  };
+}
+
+interface TestSession {
+  id: string;
+  userId: string;
+  createdAt: string;
+  results: TestResult[];
+}
+
+interface TestHistoryResponse {
+  sessions: TestSession[];
+  statistics: {
+    totalSessions: number;
+    totalTests: number;
+    correctAnswers: number;
+    accuracy: number;
+    averageTimeSpent: number;
+  };
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -37,7 +65,7 @@ export default function TestHistoryPage() {
   const api = useApi();
 
   // Fetch test history
-  const { data: testSessions = [], isLoading } = useQuery<TestSession[]>({
+  const { data: testHistoryData, isLoading } = useQuery<TestHistoryResponse>({
     queryKey: ["test-history"],
     queryFn: async () => {
       return api.get("/test-history");
@@ -47,8 +75,39 @@ export default function TestHistoryPage() {
     refetchOnWindowFocus: true
   });
 
+  // Extract sessions and statistics from the response
+  const testSessions = testHistoryData?.sessions || [];
+  const statistics = testHistoryData?.statistics || {
+    totalSessions: 0,
+    totalTests: 0,
+    correctAnswers: 0,
+    accuracy: 0,
+    averageTimeSpent: 0
+  };
+
   const formatTime = (ms: number) => {
-    return `${Math.floor(ms / 1000)}.${(ms % 1000).toString().padStart(3, "0")}s`;
+    if (ms < 1000) {
+      return `${ms}ms`;
+    }
+    const seconds = (ms / 1000).toFixed(1);
+    return `${seconds}s`;
+  };
+
+  // Calculate statistics for a session
+  const calculateSessionStats = (session: TestSession) => {
+    const totalQuestions = session.results.length;
+    const correctAnswers = session.results.filter(r => r.isCorrect).length;
+    const incorrectAnswers = totalQuestions - correctAnswers;
+    const averageTime = totalQuestions > 0 
+      ? session.results.reduce((acc, r) => acc + r.timeSpent, 0) / totalQuestions 
+      : 0;
+
+    return {
+      totalQuestions,
+      correctAnswers,
+      incorrectAnswers,
+      averageTime
+    };
   };
 
   const totalPages = Math.ceil(testSessions.length / ITEMS_PER_PAGE);
@@ -127,7 +186,7 @@ export default function TestHistoryPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Total Tests</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{testSessions.length}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{statistics.totalSessions}</p>
                 </div>
               </div>
             </Card>
@@ -138,13 +197,9 @@ export default function TestHistoryPage() {
                   <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Correct</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Accuracy</p>
                   <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
-                    {Math.round(
-                      (testSessions.reduce((acc, session) => acc + session.correctAnswers, 0) /
-                        testSessions.reduce((acc, session) => acc + session.totalQuestions, 0)) *
-                        100
-                    )}%
+                    {Math.round(statistics.accuracy)}%
                   </p>
                 </div>
               </div>
@@ -156,13 +211,9 @@ export default function TestHistoryPage() {
                   <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Incorrect</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Incorrect</p>
                   <p className="text-2xl font-semibold text-red-600 dark:text-red-400">
-                    {Math.round(
-                      (testSessions.reduce((acc, session) => acc + session.incorrectAnswers, 0) /
-                        testSessions.reduce((acc, session) => acc + session.totalQuestions, 0)) *
-                        100
-                    )}%
+                    {Math.round(100 - statistics.accuracy)}%
                   </p>
                 </div>
               </div>
@@ -176,10 +227,7 @@ export default function TestHistoryPage() {
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Time/Question</p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                    {formatTime(
-                      testSessions.reduce((acc, session) => acc + session.averageTime, 0) /
-                        testSessions.length
-                    )}
+                    {formatTime(statistics.averageTimeSpent)}
                   </p>
                 </div>
               </div>
@@ -188,91 +236,97 @@ export default function TestHistoryPage() {
 
           {/* Test Sessions List */}
           <div className="space-y-4">
-            {paginatedSessions.map((session) => (
-              <Collapsible
-                key={session.id}
-                open={expandedSessions.has(session.id)}
-                onOpenChange={() => toggleSession(session.id)}
-              >
-                <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                  <CollapsibleTrigger className="w-full">
-                    <div className="space-y-4">
-                      {/* Session Header */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}
-                          </span>
-                          {expandedSessions.has(session.id) ? (
-                            <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4">
+            {paginatedSessions.map((session) => {
+              const stats = calculateSessionStats(session);
+              return (
+                <Collapsible
+                  key={session.id}
+                  open={expandedSessions.has(session.id)}
+                  onOpenChange={() => toggleSession(session.id)}
+                >
+                  <Card className="p-4 sm:p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+                    <CollapsibleTrigger className="w-full">
+                      <div className="space-y-4">
+                        {/* Session Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {session.correctAnswers} correct
+                            <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}
                             </span>
+                            {expandedSessions.has(session.id) ? (
+                              <ChevronUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-red-500" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {session.incorrectAnswers} incorrect
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {formatTime(session.averageTime)}
-                            </span>
+                          <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-green-500" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {stats.correctAnswers} correct
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-red-500" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {stats.incorrectAnswers} incorrect
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {formatTime(stats.averageTime)}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CollapsibleTrigger>
+                    </CollapsibleTrigger>
 
-                  <CollapsibleContent>
-                    {/* Results Grid */}
-                    <div className="grid gap-3 mt-4">
-                      {session.results.map((result, index) => (
-                        <div
-                          key={index}
-                          className={cn(
-                            "p-4 rounded-lg",
-                            result.isCorrect 
-                              ? "bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800" 
-                              : "bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800"
-                          )}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-medium text-gray-900 dark:text-gray-100">{result.word}</span>
-                                <span className="text-gray-400 dark:text-gray-500">→</span>
-                                <span className="text-gray-600 dark:text-gray-300">{result.definition}</span>
+                    <CollapsibleContent>
+                      {/* Results Grid */}
+                      <div className="grid gap-3 mt-4">
+                        {session.results.map((result, index) => (
+                          <div
+                            key={result.id}
+                            className={cn(
+                              "p-4 rounded-lg",
+                              result.isCorrect 
+                                ? "bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800" 
+                                : "bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800"
+                            )}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    {result.card.word}
+                                  </span>
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                                    - {result.card.definition}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                  {formatTime(result.timeSpent)}
+                                </span>
+                                {result.isCorrect ? (
+                                  <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+                                ) : (
+                                  <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {formatTime(result.timeSpent)}
-                              </span>
-                              {result.isCorrect ? (
-                                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
-                              )}
-                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            ))}
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              );
+            })}
           </div>
 
           {/* Pagination */}

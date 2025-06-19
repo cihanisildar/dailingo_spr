@@ -53,9 +53,9 @@ export default function CardsPage() {
   };
 
   return (
-    <div className="space-y-6 px-2 sm:px-4 md:px-8 max-w-3xl mx-auto w-full">
+    <div className="space-y-6 w-full">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 sm:p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-4 sm:p-8 w-full">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -92,7 +92,7 @@ export default function CardsPage() {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {paginatedCards?.map((card) => (
           <Link key={card.id} href={`/dashboard/cards/${card.id}`}>
             <Card className="p-4 sm:p-6 hover:shadow-lg transition-all cursor-pointer min-h-[160px] flex flex-col justify-between">

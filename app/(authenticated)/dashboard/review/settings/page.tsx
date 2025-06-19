@@ -48,13 +48,13 @@ export default function ReviewSettingsPage() {
     },
     onSuccess: (data) => {
       console.log('Mutation success:', data);
-      toast.success("Review schedule updated successfully");
+      toast.success(schedule ? "Review schedule updated successfully" : "Review schedule created successfully");
       setIsEditing(false);
       queryClient.invalidateQueries({ queryKey: ["review-schedule"] });
     },
     onError: (error) => {
       console.error('Mutation error:', error);
-      toast.error("Failed to update review schedule");
+      toast.error(schedule ? "Failed to update review schedule" : "Failed to create review schedule");
     },
   });
 
@@ -63,6 +63,10 @@ export default function ReviewSettingsPage() {
     if (schedule) {
       setName(schedule.name);
       setDescription(schedule.description || "");
+    } else {
+      // Set default values when creating a new schedule
+      setName("My Review Schedule");
+      setDescription("");
     }
   }, [schedule]);
 
@@ -74,7 +78,8 @@ export default function ReviewSettingsPage() {
       return;
     }
     
-    const newIntervals = [...(schedule?.intervals || [])];
+    const currentIntervals = schedule?.intervals || [];
+    const newIntervals = [...currentIntervals];
     if (!newIntervals.includes(interval)) {
       newIntervals.push(interval);
       newIntervals.sort((a, b) => a - b);
@@ -114,8 +119,12 @@ export default function ReviewSettingsPage() {
       toast.error("Schedule name is required");
       return;
     }
+    
+    // Use default intervals if no schedule exists yet
+    const intervals = schedule?.intervals || [1, 7, 30]; // Default intervals: 1 day, 1 week, 1 month
+    
     updateScheduleMutation.mutate({
-      intervals: schedule?.intervals || [],
+      intervals,
       name,
       description,
     });
@@ -128,6 +137,43 @@ export default function ReviewSettingsPage() {
 
   if (error) {
     return <div>Error: {error.message}</div>;
+  }
+
+  // Handle case where no review schedule exists
+  if (!schedule) {
+    return (
+      <div className="space-y-8">
+        <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-white">Review Schedule Settings</h1>
+                <p className="text-blue-100 dark:text-blue-200 mt-2">Track your learning progress over time.</p>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+          <div className="p-8 text-center">
+            <div className="mb-4">
+              <Clock className="h-16 w-16 text-gray-400 mx-auto" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No Review Schedule Found</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              You don't have a review schedule set up yet. Create one to start tracking your learning progress.
+            </p>
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Review Schedule
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   // 7. Main render

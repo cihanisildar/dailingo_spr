@@ -9,12 +9,14 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useApi } from "@/hooks/useApi";
 
 export default function SuggestionDialog({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const { post } = useApi();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,12 +24,7 @@ export default function SuggestionDialog({ onClose }: { onClose: () => void }) {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("/api/suggestion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
-      if (!res.ok) throw new Error("Failed to send suggestion");
+      await post("/suggestion", { message });
       setSuccess(true);
       setMessage("");
     } catch (err) {

@@ -30,11 +30,15 @@ export interface ReviewSchedule {
 
 export function useReviewScheduleQuery() {
   const api = useApi();
-  return useQuery<ReviewSchedule>({
+  return useQuery<ReviewSchedule | null>({
     queryKey: ['review-schedule'],
     queryFn: async () => {
       const response = await api.get<ReviewSchedule>('/review-schedule');
       console.log('API Response:', response);
+      
+      if (response === null) {
+        return null;
+      }
       
       if (response && 'id' in response) {
         return response;

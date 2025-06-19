@@ -270,4 +270,133 @@ export function ReviewSettingsSkeleton() {
       </Card>
     </div>
   );
+}
+
+export function TestSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Main Card */}
+      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+        <div className="p-4 sm:p-6">
+          <div className="space-y-6">
+            {/* Mode Selection */}
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-32" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+            </div>
+
+            {/* Study Mode */}
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-32" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+            </div>
+
+            {/* Question Amount */}
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            {/* Start Button */}
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </Card>
+
+      {/* Sidebar */}
+      <div className="space-y-6">
+        {/* Test Info Card */}
+        <Card className="bg-blue-50 dark:bg-blue-900/30">
+          <div className="p-4 sm:p-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-8 w-16" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* About Card */}
+        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600">
+          <div className="p-4 sm:p-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export function TestInProgressSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Card */}
+      <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-6 overflow-hidden">
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <Skeleton className="h-8 w-48 bg-white/20" />
+              <Skeleton className="h-6 w-32 mt-2 bg-white/20" />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Skeleton className="h-10 w-24 bg-white/20" />
+              <Skeleton className="h-10 w-24 bg-white/20" />
+              <Skeleton className="h-10 w-20 bg-white/20" />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Question Card */}
+      <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+        <div className="p-4 sm:p-8">
+          <div className="text-center space-y-6 sm:space-y-8">
+            <div className="py-6 sm:py-8">
+              <Skeleton className="h-10 w-64 mx-auto mb-3" />
+              <Skeleton className="h-6 w-32 mx-auto" />
+              <Skeleton className="h-4 w-48 mx-auto mt-4" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
 } 

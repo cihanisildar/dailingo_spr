@@ -56,10 +56,10 @@ The Node.js backend implements the following endpoints:
 - POST `/lists/:id/remove-cards`
 
 ### Test Sessions
-- POST `/test-session`
-- POST `/test-session/:id/results`
-- GET `/test-session/:id`
-- GET `/test-history`
+- POST `/api/test-sessions` - Create a test session
+- GET `/api/test-sessions` - Get all test sessions  
+- GET `/api/test-sessions/:id` - Get a specific test session
+- POST `/api/test-sessions/:sessionId/results` - Submit test results
 
 ### Review Sessions
 - POST `/review-session`

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useApi } from "@/hooks/useApi";
+import { useTest } from "@/hooks/useTest";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, BookOpen, CheckCircle2, Clock, GraduationCap, HelpCircle, Shuffle, TrendingUp, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,6 +29,7 @@ import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { toast } from "react-hot-toast";
 import Confetti from 'react-confetti';
 import { Label } from "@/components/ui/label";
+import { TestSkeleton, TestInProgressSkeleton } from "@/components/review/ReviewSkeletons";
 
 interface Word {
   id: string;
@@ -64,11 +66,13 @@ export default function TestPage() {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const api = useApi();
+  const { startTest: startTestSession, submitTestResults } = useTest();
   const [testMode, setTestMode] = useState<TestMode>("all");
   const [studyMode, setStudyMode] = useState<StudyMode>("multiple-choice");
   const [isTestStarted, setIsTestStarted] = useState(false);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [startTime, setStartTime] = useState<number>(0);
+  const [cardStartTime, setCardStartTime] = useState<number>(0);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [questionAmount, setQuestionAmount] = useState<number>(10); // Default to 10
@@ -82,6 +86,9 @@ export default function TestPage() {
 
   // Selected words for the test (move this up for hook order)
   const [words, setWords] = useState<Word[]>([]);
+  
+  // Test session management
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // For scroll hint
   const wordRef = useRef<HTMLHeadingElement>(null);
@@ -106,12 +113,12 @@ export default function TestPage() {
       setWordOverflow(wordRef.current.scrollHeight > wordRef.current.clientHeight + 2);
     }
     if (defRef.current) {
-      setDefOverflow(defRef.current.scrollHeight > defRef.current.clientHeight + 2);
+      setDefOverflow(defRef.current.scrollHeight > def.current.clientHeight + 2);
     }
   }, [currentWordIndex, words, isFlipped]);
 
   // Fetch today's words
-  const { data: todayWords = [] } = useQuery<Word[]>({
+  const { data: todayWords = [], isLoading: isTodayWordsLoading } = useQuery<Word[]>({
     queryKey: ["words", "today"],
     queryFn: async () => {
       return api.get("/cards/today");
@@ -119,14 +126,14 @@ export default function TestPage() {
   });
 
   // Fetch all words
-  const { data: allWords = [] } = useQuery<Word[]>({
+  const { data: allWords = [], isLoading: isAllWordsLoading } = useQuery<Word[]>({
     queryKey: ["words"],
     queryFn: async () => {
       return api.get("/cards");
     },
   });
 
-  const isLoading = !todayWords || !allWords;
+  const isLoading = isTodayWordsLoading || isAllWordsLoading;
 
   // Update question amount when allWords changes
   useEffect(() => {
@@ -156,16 +163,28 @@ export default function TestPage() {
   // Check if we have any words available
   const hasWords = testMode === "today" ? todayWords.length > 0 : allWords.length > 0;
 
-  // Mutation for submitting word result
-  const submitResult = useMutation({
-    mutationFn: async (result: TestResult) => {
-      return await api.post("/word-result", result);
+  // Mutation for starting test session
+  const createTestSession = useMutation({
+    mutationFn: async (data: { cardIds: string[], mode: string }) => {
+      const response = await startTestSession(data);
+      if (!response?.sessionId) {
+        throw new Error('Invalid response from server: missing session ID');
+      }
+      return response;
     },
+    onError: (error) => {
+      console.error('Error creating test session:', error);
+      toast.error('Failed to create test session. Please try again.');
+    }
   });
 
-  const submitTestSession = useMutation({
-    mutationFn: async (results: TestResult[]) => {
-      return await api.post("/test-session", { results });
+  // Mutation for submitting test session results
+  const submitTestSessionResults = useMutation({
+    mutationFn: async ({ sessionId, result }: { sessionId: string, result: TestResult }) => {
+      if (!sessionId) {
+        throw new Error('No session ID available');
+      }
+      return await submitTestResults(sessionId, result);
     },
     onSuccess: () => {
       // Invalidate test history cache
@@ -180,6 +199,144 @@ export default function TestPage() {
       setShowResults(false); // Allow retrying the submission
     }
   });
+
+  const handleResponse = async (selectedAnswer: string) => {
+    if (showFeedback) return; // Prevent multiple submissions
+
+    const timeSpent = Date.now() - startTime;
+    const isCorrect = selectedAnswer === words[currentWordIndex].definition;
+    const result = {
+      cardId: words[currentWordIndex].id,
+      isCorrect,
+      timeSpent,
+    };
+
+    try {
+      // Update all related states together
+      setShowFeedback(true);
+      setElapsedTime(timeSpent);
+      setLastAnswer({
+        selected: selectedAnswer,
+        correct: words[currentWordIndex].definition,
+        isCorrect
+      });
+      
+      // Submit the individual result immediately
+      if (currentSessionId) {
+        await submitTestSessionResults.mutateAsync({
+          sessionId: currentSessionId,
+          result
+        });
+      }
+      
+      // Update test results locally
+      setTestResults(prev => [...prev, result]);
+
+      // Move to next question after 1.5 seconds
+      setTimeout(() => {
+        if (currentWordIndex < words.length - 1) {
+          setCurrentWordIndex(prev => prev + 1);
+          setShowFeedback(false); // Reset feedback state
+          setStartTime(Date.now()); // Reset timer for next question
+          setElapsedTime(0); // Reset displayed time
+          generateOptions(words[currentWordIndex + 1].definition, allWords);
+        } else {
+          // Test is complete, show results
+          setShowResults(true);
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error handling response:', error);
+      toast.error('Failed to submit answer. Please try again.');
+    }
+  };
+
+  const resetTest = () => {
+    setShowResults(false);
+    setTestResults([]);
+    setCurrentWordIndex(0);
+    setLastAnswer(null);
+    setShowConfetti(false);
+    setCurrentSessionId(null);
+    setFlashcardResults([]);
+    setShowFlashcardSummary(false);
+  };
+
+  const formatTime = (ms: number) => {
+    return `${Math.floor(ms / 1000)}.${(ms % 1000).toString().padStart(3, "0")}s`;
+  };
+
+  // Handle navigation attempts
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isTestStarted && !showResults) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (!isTestStarted || showResults) return;
+
+      const link = (e.target as HTMLElement).closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      if (!href || href === pathname) return;
+
+      e.preventDefault();
+      setPendingNavigation(href);
+      setShowExitDialog(true);
+    };
+
+    if (isTestStarted && !showResults) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      document.addEventListener('click', handleClick, true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, [isTestStarted, showResults, pathname]);
+
+  const handleExit = () => {
+    if (isTestStarted && !showResults) {
+      setShowExitDialog(true);
+    } else {
+      router.push('/dashboard/test');
+    }
+  };
+
+  const confirmExit = () => {
+    setShowExitDialog(false);
+    setIsTestStarted(false);
+    setTestResults([]);
+    setCurrentSessionId(null);
+    if (pendingNavigation) {
+      router.push(pendingNavigation);
+      setPendingNavigation(null);
+    } else {
+      router.push('/dashboard/test');
+    }
+  };
+
+  const isMobile = useIsMobile();
+
+  // Add window resize handler for confetti
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -266,11 +423,36 @@ export default function TestPage() {
         return;
       }
 
+      // Create test session first
+      const cardIds = selectedWords.map(word => word.id);
+      const mode = studyMode === "multiple-choice" ? "definition" : "word";
+      
+      console.log('Creating test session with:', { cardIds, mode });
+      const sessionResponse = await createTestSession.mutateAsync({
+        cardIds,
+        mode
+      });
+      console.log('Session response:', sessionResponse);
+
+      if (!sessionResponse) {
+        throw new Error('No response received from server');
+      }
+
+      console.log('Session ID from response:', sessionResponse.sessionId);
+      
+      if (!sessionResponse.sessionId) {
+        throw new Error('No session ID received from server');
+      }
+
+      // Store the session ID - response is already unwrapped
+      setCurrentSessionId(sessionResponse.sessionId);
+
       setWords(selectedWords);
       setIsTestStarted(true);
       setCurrentWordIndex(0);
       setTestResults([]);
       setStartTime(Date.now());
+      setCardStartTime(Date.now());
       setShowFeedback(false);
       setLastAnswer(null);
       setIsFlipped(false);
@@ -284,137 +466,10 @@ export default function TestPage() {
     }
   };
 
-  const handleResponse = async (selectedAnswer: string) => {
-    if (showFeedback) return; // Prevent multiple submissions
-
-    const timeSpent = Date.now() - startTime;
-    const isCorrect = selectedAnswer === words[currentWordIndex].definition;
-    const result = {
-      wordId: words[currentWordIndex].id,
-      isCorrect,
-      timeSpent,
-    };
-
-    try {
-      // Update all related states together before the API call
-      setShowFeedback(true);
-      setElapsedTime(timeSpent);
-      setLastAnswer({
-        selected: selectedAnswer,
-        correct: words[currentWordIndex].definition,
-        isCorrect
-      });
-
-      // Then submit the individual result
-      await submitResult.mutateAsync(result);
-      
-      // Update test results
-      setTestResults(prev => [...prev, result]);
-
-      // Move to next question after 1.5 seconds
-      setTimeout(() => {
-        if (currentWordIndex < words.length - 1) {
-          setCurrentWordIndex(prev => prev + 1);
-          setShowFeedback(false); // Reset feedback state
-          setStartTime(Date.now()); // Reset timer for next question
-          setElapsedTime(0); // Reset displayed time
-          generateOptions(words[currentWordIndex + 1].definition, allWords);
-        } else {
-          // Submit the complete test session
-          submitTestSession.mutate([...testResults, result]);
-          setShowConfetti(true);
-          setShowResults(true);
-          setIsTestStarted(false);
-        }
-      }, 1500);
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      toast.error('Failed to save answer. Please try again.');
-      setShowFeedback(false); // Reset feedback state on error
-    }
-  };
-
-  const resetTest = () => {
-    setShowResults(false);
-    setTestResults([]);
-    setCurrentWordIndex(0);
-    setLastAnswer(null);
-    setShowConfetti(false);
-  };
-
-  const formatTime = (ms: number) => {
-    return `${Math.floor(ms / 1000)}.${(ms % 1000).toString().padStart(3, "0")}s`;
-  };
-
-  // Handle navigation attempts
+  // Add useEffect to update cardStartTime
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isTestStarted && !showResults) {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      }
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      if (!isTestStarted || showResults) return;
-
-      const link = (e.target as HTMLElement).closest('a');
-      if (!link) return;
-
-      const href = link.getAttribute('href');
-      if (!href || href === pathname) return;
-
-      e.preventDefault();
-      setPendingNavigation(href);
-      setShowExitDialog(true);
-    };
-
-    if (isTestStarted && !showResults) {
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      document.addEventListener('click', handleClick, true);
-    }
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('click', handleClick, true);
-    };
-  }, [isTestStarted, showResults, pathname]);
-
-  const handleExit = () => {
-    if (isTestStarted && !showResults) {
-      setShowExitDialog(true);
-    } else {
-      router.push('/dashboard/test');
-    }
-  };
-
-  const confirmExit = () => {
-    setShowExitDialog(false);
-    setIsTestStarted(false);
-    setTestResults([]);
-    if (pendingNavigation) {
-      router.push(pendingNavigation);
-      setPendingNavigation(null);
-    } else {
-      router.push('/dashboard/test');
-    }
-  };
-
-  const isMobile = useIsMobile();
-
-  // Add window resize handler for confetti
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    setCardStartTime(Date.now());
+  }, [currentWordIndex]);
 
   if (showResults) {
     return (
@@ -923,34 +978,84 @@ export default function TestPage() {
                   <Button
                     size="lg"
                     className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-2 rounded-lg shadow"
-                    onClick={() => {
-                      setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: true }]);
-                      if (currentWordIndex < words.length - 1) {
-                        setIsFlipped(false);
-                        setTimeout(() => {
-                          setCurrentWordIndex(prev => prev + 1);
-                        }, 300);
-                      } else {
-                        setShowConfetti(true);
-                        setShowFlashcardSummary(true);
+                    onClick={async () => {
+                      const timeSpent = Date.now() - cardStartTime;
+                      const result = {
+                        cardId: words[currentWordIndex].id,
+                        isCorrect: true,
+                        timeSpent
+                      };
+
+                      try {
+                        // Submit the individual result immediately
+                        if (currentSessionId) {
+                          await submitTestSessionResults.mutateAsync({
+                            sessionId: currentSessionId,
+                            result
+                          });
+                        } else {
+                          throw new Error('No session ID available');
+                        }
+                        
+                        // Update local state
+                        setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: true }]);
+                        
+                        if (currentWordIndex < words.length - 1) {
+                          setIsFlipped(false);
+                          setTimeout(() => {
+                            setCurrentWordIndex(prev => prev + 1);
+                          }, 300);
+                        } else {
+                          // Test is complete, show summary
+                          setShowConfetti(true);
+                          setShowFlashcardSummary(true);
+                        }
+                      } catch (error) {
+                        console.error('Error submitting flashcard result:', error);
+                        toast.error('Failed to save result. Please try again.');
                       }
                     }}
                   >
-                    Knew
+                    Knew it
                   </Button>
                   <Button
                     size="lg"
                     className="bg-red-500 hover:bg-red-600 text-white font-semibold px-8 py-2 rounded-lg shadow"
-                    onClick={() => {
-                      setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: false }]);
-                      if (currentWordIndex < words.length - 1) {
-                        setIsFlipped(false);
-                        setTimeout(() => {
-                          setCurrentWordIndex(prev => prev + 1);
-                        }, 300);
-                      } else {
-                        setShowConfetti(true);
-                        setShowFlashcardSummary(true);
+                    onClick={async () => {
+                      const timeSpent = Date.now() - cardStartTime;
+                      const result = {
+                        cardId: words[currentWordIndex].id,
+                        isCorrect: false,
+                        timeSpent
+                      };
+
+                      try {
+                        // Submit the individual result immediately
+                        if (currentSessionId) {
+                          await submitTestSessionResults.mutateAsync({
+                            sessionId: currentSessionId,
+                            result
+                          });
+                        } else {
+                          throw new Error('No session ID available');
+                        }
+                        
+                        // Update local state
+                        setFlashcardResults(prev => [...prev, { id: words[currentWordIndex].id, knew: false }]);
+                        
+                        if (currentWordIndex < words.length - 1) {
+                          setIsFlipped(false);
+                          setTimeout(() => {
+                            setCurrentWordIndex(prev => prev + 1);
+                          }, 300);
+                        } else {
+                          // Test is complete, show summary
+                          setShowConfetti(true);
+                          setShowFlashcardSummary(true);
+                        }
+                      } catch (error) {
+                        console.error('Error submitting flashcard result:', error);
+                        toast.error('Failed to save result. Please try again.');
                       }
                     }}
                   >
@@ -1102,191 +1207,197 @@ export default function TestPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Card */}
-      <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
-        <div className="p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
-              <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
+    <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      {isLoading ? (
+        <TestSkeleton />
+      ) : !isTestStarted ? (
+        <div className="space-y-8">
+          {/* Header Card */}
+          <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
+                  <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+                <div className="p-4 sm:p-6 space-y-6">
+                  <div>
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <Button
+                          variant={testMode === "all" ? "default" : "outline"}
+                          onClick={() => setTestMode("all")}
+                          className={cn(
+                            "w-full",
+                            testMode === "all" 
+                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                          )}
+                        >
+                          All Words
+                        </Button>
+                        <Button
+                          variant={testMode === "today" ? "default" : "outline"}
+                          onClick={() => setTestMode("today")}
+                          className={cn(
+                            "w-full",
+                            testMode === "today" 
+                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                          )}
+                        >
+                          Today's Words
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <Button
+                          variant={isMultipleChoice ? "default" : "outline"}
+                          onClick={() => setStudyMode("multiple-choice" as StudyMode)}
+                          className={cn(
+                            "w-full",
+                            isMultipleChoice 
+                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                          )}
+                        >
+                          Multiple Choice
+                        </Button>
+                        <Button
+                          variant={isFlashcards ? "default" : "outline"}
+                          onClick={() => setStudyMode("flashcards" as StudyMode)}
+                          className={cn(
+                            "w-full",
+                            isFlashcards 
+                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
+                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                          )}
+                        >
+                          Flashcards
+                        </Button>
+                      </div>
+                    </div>
+
+                    {isMultipleChoice && (
+                      <div>
+                        <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Number of Questions
+                        </Label>
+                        <Input
+                          id="questionAmount"
+                          type="number"
+                          min="1"
+                          max={allWords.length}
+                          value={questionAmount}
+                          onChange={handleQuestionAmountChange}
+                          className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        />
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Available words: {allWords.length}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {!hasWords && (
+                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No words available for testing. Add some words first.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
+                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        You need at least 4 words for multiple choice questions.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    onClick={startTest}
+                    disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
+                    className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
+                  >
+                    Start Test
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                      <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
+                      <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
+                        {testMode === "today" ? todayWords.length : allWords.length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
+                      <p className="text-blue-900 dark:text-blue-100">
+                        {testMode === "today" ? "Today's Words" : "All Words"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
+                      <p className="text-blue-900 dark:text-blue-100">
+                        {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                      <HelpCircle className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-medium">About Testing</h3>
+                  </div>
+                  <p className="text-blue-50 text-sm leading-relaxed">
+                    Testing yourself is one of the most effective ways to learn. Choose between multiple
+                    choice questions or flashcards to test your knowledge. Multiple choice questions help
+                    you distinguish between similar words, while flashcards are great for quick recall.
+                  </p>
+                </div>
+              </Card>
             </div>
           </div>
         </div>
-      </Card>
-
-      {!isTestStarted ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-              <div className="p-4 sm:p-6 space-y-6">
-                <div>
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <Button
-                        variant={testMode === "all" ? "default" : "outline"}
-                        onClick={() => setTestMode("all")}
-                        className={cn(
-                          "w-full",
-                          testMode === "all" 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        All Words
-                      </Button>
-                      <Button
-                        variant={testMode === "today" ? "default" : "outline"}
-                        onClick={() => setTestMode("today")}
-                        className={cn(
-                          "w-full",
-                          testMode === "today" 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Today's Words
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <Button
-                        variant={isMultipleChoice ? "default" : "outline"}
-                        onClick={() => setStudyMode("multiple-choice" as StudyMode)}
-                        className={cn(
-                          "w-full",
-                          isMultipleChoice 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Multiple Choice
-                      </Button>
-                      <Button
-                        variant={isFlashcards ? "default" : "outline"}
-                        onClick={() => setStudyMode("flashcards" as StudyMode)}
-                        className={cn(
-                          "w-full",
-                          isFlashcards 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Flashcards
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isMultipleChoice && (
-                    <div>
-                      <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Number of Questions
-                      </Label>
-                      <Input
-                        id="questionAmount"
-                        type="number"
-                        min="1"
-                        max={allWords.length}
-                        value={questionAmount}
-                        onChange={handleQuestionAmountChange}
-                        className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                      />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Available words: {allWords.length}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {!hasWords && (
-                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      No words available for testing. Add some words first.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
-                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      You need at least 4 words for multiple choice questions.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  onClick={startTest}
-                  disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
-                  className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
-                >
-                  Start Test
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
-                    <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
-                      {testMode === "today" ? todayWords.length : allWords.length}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
-                    <p className="text-blue-900 dark:text-blue-100">
-                      {testMode === "today" ? "Today's Words" : "All Words"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
-                    <p className="text-blue-900 dark:text-blue-100">
-                      {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                    <HelpCircle className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-medium">About Testing</h3>
-                </div>
-                <p className="text-blue-50 text-sm leading-relaxed">
-                  Testing yourself is one of the most effective ways to learn. Choose between multiple
-                  choice questions or flashcards to test your knowledge. Multiple choice questions help
-                  you distinguish between similar words, while flashcards are great for quick recall.
-                </p>
-              </div>
-            </Card>
-          </div>
-        </div>
+      ) : createTestSession.isLoading ? (
+        <TestInProgressSkeleton />
       ) : (
         <div className="space-y-6">
           <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-6 overflow-hidden">

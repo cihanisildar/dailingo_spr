@@ -34,10 +34,17 @@ export const useApi = () => {
       ...(body && { body: isFormData ? body : JSON.stringify(body) }),
     });
 
+    console.log('Raw API response:', await response.clone().text());
+    
     const result = await response.json() as ApiResponse<T>;
+    console.log('Parsed API response:', result);
 
     if (result.status === 'error' || !response.ok) {
       throw new Error(result.message || 'Something went wrong');
+    }
+
+    if (result.data === null) {
+      throw new Error('No data received from server');
     }
 
     return result.data as T;

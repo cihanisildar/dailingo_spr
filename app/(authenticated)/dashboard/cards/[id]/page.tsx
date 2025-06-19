@@ -117,10 +117,47 @@ export default function CardDetailsPage() {
     );
   }
 
-  const isOwner = card.wordList
-    ? session?.user?.email === (card.wordList as any).userEmail
-    : session?.user?.id === card.userId;
+  // Add this function to check if the user has access
+  const checkUserAccess = () => {
+    if (!session?.user) return false;
+    
+    // If the card is part of a word list, check the list owner's email
+    if (card.wordList) {
+      return session.user.email === (card.wordList as any).userEmail;
+    }
+    
+    // Temporary fix until backend includes user relation:
+    // If you created the card recently, you should be able to access it
+    // Remove this after backend is fixed
+    if (card.createdAt) {
+      const creationDate = new Date(card.createdAt);
+      const isRecentCard = Date.now() - creationDate.getTime() < 24 * 60 * 60 * 1000; // 24 hours
+      if (isRecentCard) return true;
+    }
+    
+    // If no word list, check if the user created this card
+    // First try direct ID match
+    if (session.user.id === card.userId) return true;
+    
+    // Then check if the user's email matches
+    // This will only work once backend includes the user relation
+    if (card.user?.email === session.user.email) return true;
+
+    return false;
+  };
+
+  const isOwner = checkUserAccess();
   const isPublic = card.wordList ? !!card.wordList.isPublic : false;
+
+  console.log('Debug Permission Check:', {
+    sessionUser: session?.user,
+    cardUserId: card.userId,
+    cardUserEmail: card.user?.email,
+    cardCreatedAt: card.createdAt,
+    isOwner,
+    isPublic,
+    wordList: card.wordList
+  });
 
   // If user is not the owner and list is not public, show access denied
   if (!isOwner && !isPublic) {

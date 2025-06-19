@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/hooks/useApi";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
-import { CheckCircle, XCircle, Calendar, TrendingUp } from "lucide-react";
+import { CheckCircle, XCircle, Calendar, TrendingUp, Clock } from "lucide-react";
 import { ReviewHistorySkeleton } from "@/components/review/ReviewSkeletons";
 
 interface Review {
@@ -111,41 +111,53 @@ export default function ReviewHistoryPage() {
       <Card className="p-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-gray-100">Review Timeline</h2>
         <div className="space-y-6">
-          {Object.entries(reviewsByDate || {}).map(([date, reviews]) => (
-            <div key={date} className="border-l-2 border-indigo-200 dark:border-indigo-800 pl-4 pb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
-                <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                  {format(new Date(date), 'MMMM d, yyyy')}
-                </h3>
+          {(!statistics?.totalReviews || Object.keys(reviewsByDate || {}).length === 0) ? (
+            <div className="flex flex-col items-center justify-center py-16 animate-fadeIn">
+              <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-full p-6 shadow-md mb-4">
+                <Clock className="h-12 w-12 text-indigo-500 dark:text-indigo-300" />
               </div>
-              <div className="grid gap-4">
-                {reviews.map((review: any) => (
-                  <div
-                    key={review.id}
-                    className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg p-4 flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{review.word}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Next review: {format(new Date(review.nextReview), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center text-green-600 dark:text-green-400">
-                        <CheckCircle className="h-5 w-5 mr-1" />
-                        <span>{review.successCount}</span>
-                      </div>
-                      <div className="flex items-center text-red-600 dark:text-red-400">
-                        <XCircle className="h-5 w-5 mr-1" />
-                        <span>{review.failureCount}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-white/80 dark:bg-gray-800/80 rounded-xl px-8 py-6 shadow-lg text-center">
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">There is no review history yet.</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-lg">Start reviewing cards to see your progress over time!</p>
               </div>
             </div>
-          ))}
+          ) : (
+            Object.entries(reviewsByDate || {}).map(([date, reviews]) => (
+              <div key={date} className="border-l-2 border-indigo-200 dark:border-indigo-800 pl-4 pb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="h-5 w-5 text-indigo-500 dark:text-indigo-400" />
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                    {format(new Date(date), 'MMMM d, yyyy')}
+                  </h3>
+                </div>
+                <div className="grid gap-4">
+                  {reviews.map((review: any) => (
+                    <div
+                      key={review.id}
+                      className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg p-4 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{review.word}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Next review: {format(new Date(review.nextReview), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center text-green-600 dark:text-green-400">
+                          <CheckCircle className="h-5 w-5 mr-1" />
+                          <span>{review.successCount}</span>
+                        </div>
+                        <div className="flex items-center text-red-600 dark:text-red-400">
+                          <XCircle className="h-5 w-5 mr-1" />
+                          <span>{review.failureCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </div>
