@@ -336,7 +336,7 @@ export default function AuthenticatedLayout({
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             {/* Header */}
             <header className="sticky top-0 z-40 border-b bg-white dark:bg-gray-950">
-              <div className="flex h-14 sm:h-16 items-center justify-between px-2 sm:px-4">
+              <div className="flex h-16 items-center justify-between px-4">
                 {/* Left: Mobile Menu Button (visible only on mobile) */}
                 <div className="flex items-center gap-2 md:hidden">
                   <SheetTrigger asChild>

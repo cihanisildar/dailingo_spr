@@ -10,6 +10,7 @@ const stats = [
     label: "Active Users",
     suffix: "+",
     gradient: "from-blue-500/20 via-purple-500/20 to-pink-500/20",
+    darkGradient: "dark:from-blue-500/30 dark:via-purple-500/30 dark:to-pink-500/30",
     textGradient:
       "from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400",
   },
@@ -18,6 +19,7 @@ const stats = [
     label: "Words Learned",
     suffix: "+",
     gradient: "from-purple-500/20 via-pink-500/20 to-orange-500/20",
+    darkGradient: "dark:from-purple-500/30 dark:via-pink-500/30 dark:to-orange-500/30",
     textGradient:
       "from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400",
   },
@@ -26,6 +28,7 @@ const stats = [
     label: "Retention Rate",
     suffix: "%",
     gradient: "from-pink-500/20 via-orange-500/20 to-yellow-500/20",
+    darkGradient: "dark:from-pink-500/30 dark:via-orange-500/30 dark:to-yellow-500/30",
     textGradient:
       "from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400",
   },
@@ -34,6 +37,7 @@ const stats = [
     label: "Less Study Time",
     suffix: "%",
     gradient: "from-purple-500/20 via-blue-500/20 to-purple-500/20",
+    darkGradient: "dark:from-purple-500/30 dark:via-blue-500/30 dark:to-purple-500/30",
     textGradient:
       "from-purple-600 to-blue-600 dark:from-purple-400 dark:to-blue-400",
   },
@@ -142,29 +146,32 @@ export default function Stats() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden">
+    <section ref={sectionRef} className="py-32 relative overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 transition-colors duration-300">
       {/* Grain effect */}
-      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.01] mix-blend-overlay" />
+      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.01] mix-blend-overlay dark:opacity-[0.02]" />
+
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -left-1/4 top-1/4 w-1/3 h-1/3 bg-gradient-to-br from-blue-500/10 to-purple-500/10 dark:from-blue-500/20 dark:to-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute -right-1/4 bottom-1/4 w-1/3 h-1/3 bg-gradient-to-tl from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 rounded-full blur-3xl"></div>
+      </div>
 
       <div className="container relative z-10">
-        <div
-          ref={numbersRef}
-          className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
-        >
+        <div ref={numbersRef} className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {stats.map((stat, index) => (
             <div
               key={stat.label}
-              className="stat-card group p-8 rounded-2xl bg-white/80 dark:bg-white/5 shadow-lg relative overflow-hidden backdrop-blur-sm"
+              className="stat-card group p-8 rounded-2xl bg-white/80 dark:bg-gray-800/80 shadow-lg relative overflow-hidden backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300"
             >
               {/* Background gradient effect */}
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-[0.15] group-hover:opacity-25 transition-all duration-500`}
+                className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} ${stat.darkGradient} opacity-[0.15] group-hover:opacity-25 transition-all duration-500`}
               />
               <div className="absolute inset-0 bg-gradient-radial from-white/80 via-white/40 to-transparent dark:from-white/10 dark:via-white/5 dark:to-transparent opacity-60" />
 
               <div className="relative z-10 space-y-4">
                 <h3
-                  className={`stat-number text-4xl font-bold bg-gradient-to-br ${stat.textGradient} bg-clip-text text-transparent`}
+                  className={`stat-number text-4xl font-bold bg-gradient-to-br ${stat.textGradient} bg-clip-text text-transparent transition-all duration-300`}
                 >
                   0{stat.suffix}
                 </h3>

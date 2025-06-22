@@ -97,12 +97,12 @@ export default function Hero() {
   return (
     <section 
       ref={sectionRef} 
-      className="relative overflow-hidden min-h-screen flex items-center py-20 md:py-32 pb-24 bg-gradient-to-b from-[#5B7CFA]/10 via-white to-[#6C5DD3]/10"
+      className="relative overflow-hidden min-h-screen flex items-center py-20 md:py-32 pb-24 bg-gradient-to-b from-[#5B7CFA]/10 via-white to-[#6C5DD3]/10 dark:from-[#5B7CFA]/20 dark:via-gray-900 dark:to-[#6C5DD3]/20 transition-colors duration-300"
     >
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -left-1/4 top-0 w-1/2 h-1/2 bg-gradient-to-br from-[#5B7CFA]/30 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute -right-1/4 bottom-0 w-1/2 h-1/2 bg-gradient-to-tl from-[#6C5DD3]/30 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -left-1/4 top-0 w-1/2 h-1/2 bg-gradient-to-br from-[#5B7CFA]/30 to-transparent dark:from-[#5B7CFA]/40 dark:to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -right-1/4 bottom-0 w-1/2 h-1/2 bg-gradient-to-tl from-[#6C5DD3]/30 to-transparent dark:from-[#6C5DD3]/40 dark:to-transparent rounded-full blur-3xl"></div>
       </div>
 
       <div className="container relative flex flex-col items-center text-center z-10">
@@ -121,16 +121,16 @@ export default function Hero() {
           </svg>
         </div>
         <div ref={headingRef}>
-          <div className="badge inline-block rounded-full bg-gradient-to-r from-rose-500/10 to-indigo-500/10 px-4 py-1.5 text-sm font-medium text-rose-700 mb-4 opacity-0 backdrop-blur-sm border border-rose-200/20">
+          <div className="badge inline-block rounded-full bg-gradient-to-r from-rose-500/10 to-indigo-500/10 dark:from-rose-500/20 dark:to-indigo-500/20 px-4 py-1.5 text-sm font-medium text-rose-700 dark:text-rose-300 mb-4 opacity-0 backdrop-blur-sm border border-rose-200/20 dark:border-rose-500/20">
             Learn smarter, not harder
           </div>
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl mb-4 opacity-0 bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3]">
+          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl mb-4 opacity-0 bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] dark:from-[#5B7CFA] dark:to-[#6C5DD3]">
             Master vocabulary with{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3]">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] dark:from-[#6C5DD3] dark:to-[#5B7CFA]">
               perfect timing
             </span>
           </h1>
-          <p className="max-w-[700px] text-gray-600 text-lg md:text-xl mb-6 opacity-0 text-center mx-auto">
+          <p className="max-w-[700px] text-gray-600 dark:text-gray-300 text-lg md:text-xl mb-6 opacity-0 text-center mx-auto transition-colors duration-300">
             Create word lists and learn them efficiently with our
             scientifically-proven spaced repetition system. Remember more with
             less effort.
@@ -139,39 +139,39 @@ export default function Hero() {
         <div className="flex justify-center mb-12">
           <Button 
             size="lg" 
-            className="px-8 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] text-white shadow-lg"
+            className="px-8 bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white shadow-lg hover:shadow-xl transition-all duration-300 border-0"
             onClick={() => setShowSuggestionDialog(true)}
           >
             Suggest a Feature or Improvement
           </Button>
         </div>
         <div ref={imageRef} className="relative w-full max-w-4xl hidden sm:block">
-          <div className="absolute inset-0 bg-gradient-to-t from-white/50 to-transparent z-10"></div>
-          <div className="rounded-2xl border border-rose-100 bg-white/80 shadow-xl overflow-hidden backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gradient-to-t from-white/50 to-transparent dark:from-gray-900/50 dark:to-transparent z-10"></div>
+          <div className="rounded-2xl border border-rose-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 shadow-xl overflow-hidden backdrop-blur-sm transition-colors duration-300">
             <div className="relative aspect-[2/1] w-full">
               {/* App screenshot mockup */}
               <div className="absolute inset-0 grid grid-cols-12 gap-4 p-8">
                 {/* Sidebar */}
-                <div className="col-span-3 rounded-xl bg-gradient-to-br from-rose-50 to-indigo-50 p-4">
+                <div className="col-span-3 rounded-xl bg-gradient-to-br from-rose-50 to-indigo-50 dark:from-rose-900/20 dark:to-indigo-900/20 p-4">
                   <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-rose-500 to-indigo-500 mb-4"></div>
                   <div className="space-y-3">
-                    <div className="h-4 w-3/4 rounded-md bg-rose-200/50"></div>
-                    <div className="h-4 w-5/6 rounded-md bg-indigo-200/50"></div>
-                    <div className="h-4 w-4/5 rounded-md bg-rose-200/50"></div>
+                    <div className="h-4 w-3/4 rounded-md bg-rose-200/50 dark:bg-rose-600/30"></div>
+                    <div className="h-4 w-5/6 rounded-md bg-indigo-200/50 dark:bg-indigo-600/30"></div>
+                    <div className="h-4 w-4/5 rounded-md bg-rose-200/50 dark:bg-rose-600/30"></div>
                   </div>
                 </div>
                 {/* Main content */}
                 <div className="col-span-9 space-y-6">
                   {/* Header */}
-                  <div className="h-12 rounded-xl bg-gradient-to-r from-rose-100/50 to-indigo-100/50"></div>
+                  <div className="h-12 rounded-xl bg-gradient-to-r from-rose-100/50 to-indigo-100/50 dark:from-rose-800/30 dark:to-indigo-800/30"></div>
                   {/* Content grid */}
                   <div className="grid grid-cols-3 gap-4">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-white to-rose-50 p-4 shadow-sm">
-                        <div className="h-4 w-2/3 rounded-md bg-rose-200/50 mb-2"></div>
+                      <div key={i} className="aspect-[4/3] rounded-xl bg-gradient-to-br from-white to-rose-50 dark:from-gray-700/50 dark:to-rose-900/20 p-4 shadow-sm">
+                        <div className="h-4 w-2/3 rounded-md bg-rose-200/50 dark:bg-rose-600/30 mb-2"></div>
                         <div className="space-y-2">
-                          <div className="h-3 w-full rounded-md bg-indigo-100/50"></div>
-                          <div className="h-3 w-5/6 rounded-md bg-indigo-100/50"></div>
+                          <div className="h-3 w-full rounded-md bg-indigo-100/50 dark:bg-indigo-700/30"></div>
+                          <div className="h-3 w-5/6 rounded-md bg-indigo-100/50 dark:bg-indigo-700/30"></div>
                         </div>
                       </div>
                     ))}
@@ -179,12 +179,12 @@ export default function Hero() {
                 </div>
               </div>
               {/* Glass overlay */}
-              <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]"></div>
+              <div className="absolute inset-0 bg-white/5 dark:bg-gray-900/5 backdrop-blur-[1px]"></div>
             </div>
           </div>
           {/* Decorative elements */}
-          <div className="absolute -left-8 -top-8 w-48 h-48 bg-gradient-to-br from-rose-300/20 to-indigo-300/20 rounded-full blur-3xl"></div>
-          <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-gradient-to-tl from-indigo-300/20 to-rose-300/20 rounded-full blur-3xl"></div>
+          <div className="absolute -left-8 -top-8 w-48 h-48 bg-gradient-to-br from-rose-300/20 to-indigo-300/20 dark:from-rose-500/30 dark:to-indigo-500/30 rounded-full blur-3xl"></div>
+          <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-gradient-to-tl from-indigo-300/20 to-rose-300/20 dark:from-indigo-500/30 dark:to-rose-500/30 rounded-full blur-3xl"></div>
         </div>
       </div>
       {showSuggestionDialog && (

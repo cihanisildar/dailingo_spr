@@ -143,27 +143,27 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer ref={footerRef} className="border-t py-12 md:py-16">
+    <footer ref={footerRef} className="border-t border-gray-200 dark:border-gray-800 py-12 md:py-16 bg-white dark:bg-gray-900 transition-colors duration-300">
       <div ref={sectionsRef} className="container grid gap-8 md:grid-cols-2 lg:grid-cols-4">
         <div className="footer-section space-y-4 opacity-0">
           <div className="flex items-center gap-2">
-            <BrainCircuit className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">WordWise</span>
+            <BrainCircuit className="h-6 w-6 text-[#5B7CFA] dark:text-[#6C5DD3]" />
+            <span className="text-xl font-bold text-gray-900 dark:text-white">WordWise</span>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-gray-600 dark:text-gray-300">
             The smarter way to learn and remember vocabulary with
             scientifically-proven spaced repetition.
           </p>
         </div>
         {Object.entries(footerLinks).map(([category, links]) => (
           <div key={category} className="footer-section opacity-0">
-            <h3 className="font-medium mb-4 capitalize">{category}</h3>
+            <h3 className="font-medium mb-4 capitalize text-gray-900 dark:text-white">{category}</h3>
             <ul className="space-y-2">
               {links.map((link) => (
                 <li key={link}>
                   <Link
                     href="#"
-                    className="text-muted-foreground hover:text-foreground transition-colors duration-200 inline-block"
+                    className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 inline-block"
                   >
                     {link}
                   </Link>
@@ -173,9 +173,9 @@ export default function Footer() {
           </div>
         ))}
       </div>
-      <div ref={socialsRef} className="container mt-8 pt-8 border-t">
+      <div ref={socialsRef} className="container mt-8 pt-8 border-t border-gray-200 dark:border-gray-800">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             © {new Date().getFullYear()} WordWise. All rights reserved.
           </p>
           <div className="flex gap-4">
@@ -183,7 +183,7 @@ export default function Footer() {
               <Link
                 key={social.name}
                 href="#"
-                className="social-icon text-muted-foreground hover:text-foreground transition-colors duration-200 hover:scale-110 transform inline-block opacity-0"
+                className="social-icon text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 hover:scale-110 transform inline-block opacity-0"
               >
                 <span className="sr-only">{social.name}</span>
                 <svg
