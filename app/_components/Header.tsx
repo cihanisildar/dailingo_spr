@@ -107,14 +107,16 @@ export default function Header() {
             <div className="h-8 w-8 rounded-full bg-gray-100 animate-pulse" />
           ) : session ? (
             <Button
-              className="bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-200/75 transition-all duration-300"
+              variant="ghost"
+              className="bg-[#5B7CFA] hover:bg-[#6C5DD3] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/75 hover:scale-105 transition-all duration-300 ease-out hover:text-white"
               onClick={() => router.push("/dashboard")}
             >
               Dashboard
             </Button>
           ) : (
             <Button
-              className="bg-gradient-to-r from-[#5B7CFA] to-[#6C5DD3] hover:from-[#6C5DD3] hover:to-[#5B7CFA] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-200/75 transition-all duration-300"
+              variant="ghost"
+              className="bg-[#5B7CFA] hover:bg-[#6C5DD3] text-white shadow-lg shadow-blue-200/50 hover:shadow-blue-300/75 hover:scale-105 transition-all duration-300 ease-out hover:text-white"
               onClick={handleSignIn}
             >
               Get Started

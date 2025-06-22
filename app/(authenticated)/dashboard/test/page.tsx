@@ -42,7 +42,7 @@ interface Word {
 }
 
 interface TestResult {
-  wordId: string;
+  cardId: string;
   isCorrect: boolean;
   timeSpent: number;
 }
@@ -113,7 +113,7 @@ export default function TestPage() {
       setWordOverflow(wordRef.current.scrollHeight > wordRef.current.clientHeight + 2);
     }
     if (defRef.current) {
-      setDefOverflow(defRef.current.scrollHeight > def.current.clientHeight + 2);
+      setDefOverflow(defRef.current.scrollHeight > defRef.current.clientHeight + 2);
     }
   }, [currentWordIndex, words, isFlipped]);
 
@@ -144,6 +144,16 @@ export default function TestPage() {
     }
   }, [allWords]);
 
+  // Auto-switch to "All Words" mode if "Today's Words" is selected but no words are available
+  useEffect(() => {
+    if (testMode === "today" && (todayWords?.length || 0) === 0 && (allWords?.length || 0) > 0) {
+      setTestMode("all");
+      toast("Switched to 'All Words' mode as no words are scheduled for today", {
+        icon: "ℹ️",
+      });
+    }
+  }, [testMode, todayWords, allWords]);
+
   const handleQuestionAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (isNaN(value)) {
@@ -157,15 +167,15 @@ export default function TestPage() {
 
   // Check if we have enough words for multiple choice
   const hasEnoughWordsForMultipleChoice = testMode === "today" 
-    ? todayWords.length >= 4 
-    : allWords.length >= 4;
+    ? (todayWords?.length || 0) >= 4 
+    : (allWords?.length || 0) >= 4;
 
   // Check if we have any words available
-  const hasWords = testMode === "today" ? todayWords.length > 0 : allWords.length > 0;
+  const hasWords = testMode === "today" ? (todayWords?.length || 0) > 0 : (allWords?.length || 0) > 0;
 
   // Mutation for starting test session
   const createTestSession = useMutation({
-    mutationFn: async (data: { cardIds: string[], mode: string }) => {
+    mutationFn: async (data: { cardIds: string[], mode: 'word' | 'definition' }) => {
       const response = await startTestSession(data);
       if (!response?.sessionId) {
         throw new Error('Invalid response from server: missing session ID');
@@ -633,189 +643,153 @@ export default function TestPage() {
 
   if (!isTestStarted) {
     return (
-      <div className="space-y-8">
-        {/* Header Card */}
-        <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
-                <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-              <div className="p-4 sm:p-6 space-y-6">
-                <div>
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <Button
-                        variant={testMode === "all" ? "default" : "outline"}
-                        onClick={() => setTestMode("all")}
-                        className={cn(
-                          "w-full",
-                          testMode === "all" 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        All Words
-                      </Button>
-                      <Button
-                        variant={testMode === "today" ? "default" : "outline"}
-                        onClick={() => setTestMode("today")}
-                        className={cn(
-                          "w-full",
-                          testMode === "today" 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Today's Words
-                      </Button>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Header Card */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-gray-800/80 dark:to-blue-900/30 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/10 dark:from-blue-600/20 dark:via-indigo-600/10 dark:to-purple-600/20" />
+            <div className="relative p-6 sm:p-8 lg:p-10">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {/* Left side - Title and description */}
+                <div className="space-y-4 flex-1">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-2xl shadow-lg">
+                      <GraduationCap className="w-8 h-8 text-white" />
                     </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      <Button
-                        variant={isMultipleChoice ? "default" : "outline"}
-                        onClick={() => setStudyMode("multiple-choice" as StudyMode)}
-                        className={cn(
-                          "w-full",
-                          isMultipleChoice 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Multiple Choice
-                      </Button>
-                      <Button
-                        variant={isFlashcards ? "default" : "outline"}
-                        onClick={() => setStudyMode("flashcards" as StudyMode)}
-                        className={cn(
-                          "w-full",
-                          isFlashcards 
-                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                            : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        )}
-                      >
-                        Flashcards
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isMultipleChoice && (
                     <div>
-                      <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Number of Questions
-                      </Label>
-                      <Input
-                        id="questionAmount"
-                        type="number"
-                        min="1"
-                        max={allWords.length}
-                        value={questionAmount}
-                        onChange={handleQuestionAmountChange}
-                        className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                      />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Available words: {allWords.length}
+                      <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                        Test Your Knowledge
+                      </h1>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg mt-1">
+                        Challenge yourself with interactive vocabulary tests
                       </p>
                     </div>
-                  )}
-                </div>
-
-                {!hasWords && (
-                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      No words available for testing. Add some words first.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
-                  <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      You need at least 4 words for multiple choice questions.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <Button
-                  onClick={startTest}
-                  disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
-                  className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
-                >
-                  Start Test
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                    <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
                 </div>
+
+                {/* Right side - Quick stats */}
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-3">
+                  <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20">
+                    <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Available Words</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100 text-lg">{allWords?.length || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Configuration Card */}
+          <Card className="p-6 sm:p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
+            <div className="space-y-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Test Configuration</h2>
+                <p className="text-slate-600 dark:text-slate-400">Customize your test experience</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+                {/* Test Mode Selection */}
                 <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
-                    <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
-                      {testMode === "today" ? todayWords.length : allWords.length}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
-                    <p className="text-blue-900 dark:text-blue-100">
-                      {testMode === "today" ? "Today's Words" : "All Words"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
-                    <p className="text-blue-900 dark:text-blue-100">
-                      {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
-                    </p>
-                  </div>
+                  <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    Test Mode
+                  </Label>
+                  <Select value={testMode} onValueChange={(value: TestMode) => setTestMode(value)}>
+                    <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
+                      <SelectItem value="all" className="text-slate-900 dark:text-slate-100">All Words ({allWords?.length || 0})</SelectItem>
+                      <SelectItem value="today" className="text-slate-900 dark:text-slate-100">Today's Words ({todayWords?.length || 0})</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </Card>
 
-            <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                    <HelpCircle className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-medium">About Testing</h3>
+                {/* Study Mode Selection */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <HelpCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    Study Mode
+                  </Label>
+                  <Select value={studyMode} onValueChange={(value: StudyMode) => setStudyMode(value)}>
+                    <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
+                      <SelectItem 
+                        value="multiple-choice" 
+                        disabled={!hasEnoughWordsForMultipleChoice}
+                        className="text-slate-900 dark:text-slate-100"
+                      >
+                        Multiple Choice {!hasEnoughWordsForMultipleChoice && "(Need 4+ words)"}
+                      </SelectItem>
+                      <SelectItem value="flashcards" className="text-slate-900 dark:text-slate-100">Flashcards</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <p className="text-blue-50 text-sm leading-relaxed">
-                  Testing yourself is one of the most effective ways to learn. Choose between multiple
-                  choice questions or flashcards to test your knowledge. Multiple choice questions help
-                  you distinguish between similar words, while flashcards are great for quick recall.
-                </p>
+
+                {/* Question Amount */}
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Shuffle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    Questions ({questionAmount})
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max={allWords?.length || 1}
+                    value={questionAmount}
+                    onChange={handleQuestionAmountChange}
+                    className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
               </div>
-            </Card>
-          </div>
+
+              {/* Warning Messages */}
+              {!hasWords && (
+                <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+                  <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-300">
+                    No words available for testing. Please add some vocabulary cards first.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!hasEnoughWordsForMultipleChoice && studyMode === "multiple-choice" && (
+                <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+                  <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-blue-800 dark:text-blue-300">
+                    Multiple choice mode requires at least 4 words. Switching to flashcards mode or add more words.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Start Test Button */}
+              {hasWords && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    onClick={startTest}
+                    disabled={createTestSession.isPending || !hasWords}
+                    className="px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                  >
+                    {createTestSession.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Starting Test...
+                      </div>
+                    ) : (
+                      <>
+                        <GraduationCap className="w-6 h-6 mr-2" />
+                        Start Test ({questionAmount} questions)
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -833,13 +807,20 @@ export default function TestPage() {
     return (
       <>
         <div className="max-w-7xl mx-auto space-y-6">
-          <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
-            <div className="p-6 sm:p-8">
+          <div className="relative bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 mb-6 overflow-hidden rounded-2xl">
+            <div className="absolute inset-0 bg-black/10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5"></div>
+            <div className="relative p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white">Flashcards</h1>
-                  <p className="text-blue-100 mt-2">
-                    {testMode === "today" ? "Today's" : "All"} words
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/20">
+                      <Shuffle className="h-6 w-6 text-white" />
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Flashcards</h1>
+                  </div>
+                  <p className="text-blue-100 text-lg">
+                    {testMode === "today" ? "Today's" : "All"} words study session
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -863,14 +844,25 @@ export default function TestPage() {
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Flashcard Test Section Redesign */}
-          <div className="flex flex-col items-center justify-center min-h-[60vh] w-full">
-            {/* Progress */}
-            <div className="mb-4 text-gray-500 text-sm font-medium">
-              Card {currentWordIndex + 1} of {words.length}
-            </div>
+                      {/* Flashcard Test Section Redesign */}
+            <div className="flex flex-col items-center justify-center min-h-[60vh] w-full">
+              {/* Progress */}
+              <div className="mb-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl px-6 py-3 border border-gray-200/50 dark:border-gray-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                  <span className="text-gray-700 dark:text-gray-300 font-semibold">
+                    Card {currentWordIndex + 1} of {words.length}
+                  </span>
+                  <div className="ml-4 bg-gray-200 dark:bg-gray-700 rounded-full h-2 w-24">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentWordIndex + 1) / words.length) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
             {/* Flashcard */}
             <div className="relative flex flex-col items-center">
               <div
@@ -1207,312 +1199,154 @@ export default function TestPage() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      {isLoading ? (
-        <TestSkeleton />
-      ) : !isTestStarted ? (
-        <div className="space-y-8">
-          {/* Header Card */}
-          <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-8 overflow-hidden">
-            <div className="p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-semibold text-white">Test Your Knowledge</h1>
-                  <p className="text-blue-100 dark:text-blue-200 mt-2">Challenge yourself with multiple choice questions or flashcards.</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header Card */}
+        <Card className="relative overflow-hidden bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-gray-800/80 dark:to-blue-900/30 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/10 dark:from-blue-600/20 dark:via-indigo-600/10 dark:to-purple-600/20" />
+          <div className="relative p-6 sm:p-8 lg:p-10">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              {/* Left side - Title and description */}
+              <div className="space-y-4 flex-1">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-2xl shadow-lg">
+                    <GraduationCap className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                      Test Your Knowledge
+                    </h1>
+                    <p className="text-slate-600 dark:text-slate-400 text-lg mt-1">
+                      Challenge yourself with interactive vocabulary tests
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-                <div className="p-4 sm:p-6 space-y-6">
+              {/* Right side - Quick stats */}
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-3">
+                <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20">
+                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Test Settings</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Configure your test preferences</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Mode</Label>
-                      <div className="grid grid-cols-2 gap-4 mt-2">
-                        <Button
-                          variant={testMode === "all" ? "default" : "outline"}
-                          onClick={() => setTestMode("all")}
-                          className={cn(
-                            "w-full",
-                            testMode === "all" 
-                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                          )}
-                        >
-                          All Words
-                        </Button>
-                        <Button
-                          variant={testMode === "today" ? "default" : "outline"}
-                          onClick={() => setTestMode("today")}
-                          className={cn(
-                            "w-full",
-                            testMode === "today" 
-                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                          )}
-                        >
-                          Today's Words
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Study Mode</Label>
-                      <div className="grid grid-cols-2 gap-4 mt-2">
-                        <Button
-                          variant={isMultipleChoice ? "default" : "outline"}
-                          onClick={() => setStudyMode("multiple-choice" as StudyMode)}
-                          className={cn(
-                            "w-full",
-                            isMultipleChoice 
-                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                          )}
-                        >
-                          Multiple Choice
-                        </Button>
-                        <Button
-                          variant={isFlashcards ? "default" : "outline"}
-                          onClick={() => setStudyMode("flashcards" as StudyMode)}
-                          className={cn(
-                            "w-full",
-                            isFlashcards 
-                              ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800" 
-                              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                          )}
-                        >
-                          Flashcards
-                        </Button>
-                      </div>
-                    </div>
-
-                    {isMultipleChoice && (
-                      <div>
-                        <Label htmlFor="questionAmount" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Number of Questions
-                        </Label>
-                        <Input
-                          id="questionAmount"
-                          type="number"
-                          min="1"
-                          max={allWords.length}
-                          value={questionAmount}
-                          onChange={handleQuestionAmountChange}
-                          className="mt-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                        />
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          Available words: {allWords.length}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {!hasWords && (
-                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        No words available for testing. Add some words first.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {isMultipleChoice && !hasEnoughWordsForMultipleChoice && (
-                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        You need at least 4 words for multiple choice questions.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <Button
-                    onClick={startTest}
-                    disabled={!hasWords || (isMultipleChoice && !hasEnoughWordsForMultipleChoice)}
-                    className="w-full bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800"
-                  >
-                    Start Test
-                  </Button>
-                </div>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-100 dark:border-blue-800">
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                      <GraduationCap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <h3 className="font-medium text-blue-900 dark:text-blue-100">Test Information</h3>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Available Words</p>
-                      <p className="text-2xl font-semibold text-blue-900 dark:text-blue-100">
-                        {testMode === "today" ? todayWords.length : allWords.length}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Test Mode</p>
-                      <p className="text-blue-900 dark:text-blue-100">
-                        {testMode === "today" ? "Today's Words" : "All Words"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Study Mode</p>
-                      <p className="text-blue-900 dark:text-blue-100">
-                        {studyMode === "multiple-choice" ? "Multiple Choice" : "Flashcards"}
-                      </p>
-                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Available Words</p>
+                    <p className="font-bold text-slate-900 dark:text-slate-100 text-lg">{allWords?.length || 0}</p>
                   </div>
                 </div>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                      <HelpCircle className="h-5 w-5" />
-                    </div>
-                    <h3 className="font-medium">About Testing</h3>
-                  </div>
-                  <p className="text-blue-50 text-sm leading-relaxed">
-                    Testing yourself is one of the most effective ways to learn. Choose between multiple
-                    choice questions or flashcards to test your knowledge. Multiple choice questions help
-                    you distinguish between similar words, while flashcards are great for quick recall.
-                  </p>
-                </div>
-              </Card>
+              </div>
             </div>
           </div>
-        </div>
-      ) : createTestSession.isLoading ? (
-        <TestInProgressSkeleton />
-      ) : (
-        <div className="space-y-6">
-          <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 mb-6 overflow-hidden">
-            <div className="p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white">Testing Words</h1>
-                  <p className="text-blue-100 dark:text-blue-200 mt-2">
-                    {testMode === "today" ? "Today's" : "All"} words test in progress
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-white" />
-                      <span className="font-medium text-white">{formatTime(elapsedTime)}</span>
-                    </div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-white" />
-                      <span className="font-medium text-white">
-                        {currentWordIndex + 1} of {words.length}
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    onClick={handleExit}
-                  >
-                    Exit Test
-                  </Button>
-                </div>
-              </div>
+        </Card>
+
+        {/* Configuration Card */}
+        <Card className="p-6 sm:p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Test Configuration</h2>
+              <p className="text-slate-600 dark:text-slate-400">Customize your test experience</p>
             </div>
-          </Card>
 
-          <Card className="overflow-hidden bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-            <div className="p-4 sm:p-8">
-              <div className="text-center space-y-6 sm:space-y-8">
-                <div className="py-6 sm:py-8">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-                    {words[currentWordIndex]?.word}
-                  </h2>
-                  {words[currentWordIndex]?.wordList && (
-                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
-                      {words[currentWordIndex].wordList.name}
-                    </span>
-                  )}
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">Choose the correct definition</p>
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+              {/* Test Mode Selection */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  Test Mode
+                </Label>
+                <Select value={testMode} onValueChange={(value: TestMode) => setTestMode(value)}>
+                  <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
+                    <SelectItem value="all" className="text-slate-900 dark:text-slate-100">All Words ({allWords?.length || 0})</SelectItem>
+                    <SelectItem value="today" className="text-slate-900 dark:text-slate-100">Today's Words ({todayWords?.length || 0})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-2xl mx-auto">
-                  {options.map((option, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="lg"
-                      className={cn(
-                        "py-6 sm:py-8 text-base sm:text-lg transition-all duration-200 relative text-left sm:text-center",
-                        showFeedback
-                          ? option === lastAnswer?.correct
-                            ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400"
-                            : option === lastAnswer?.selected && !lastAnswer?.isCorrect
-                            ? "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400"
-                            : "opacity-50"
-                          : "hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800"
-                      )}
-                      onClick={() => !showFeedback && handleResponse(option)}
-                      disabled={showFeedback}
+              {/* Study Mode Selection */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  Study Mode
+                </Label>
+                <Select value={studyMode} onValueChange={(value: StudyMode) => setStudyMode(value)}>
+                  <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
+                    <SelectItem 
+                      value="multiple-choice" 
+                      disabled={!hasEnoughWordsForMultipleChoice}
+                      className="text-slate-900 dark:text-slate-100"
                     >
-                      {option}
-                      {showFeedback && option === lastAnswer?.correct && (
-                        <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 absolute right-3" />
-                      )}
-                      {showFeedback && option === lastAnswer?.selected && !lastAnswer?.isCorrect && (
-                        <XCircle className="h-5 w-5 text-red-500 dark:text-red-400 absolute right-3" />
-                      )}
-                    </Button>
-                  ))}
-                </div>
+                      Multiple Choice {!hasEnoughWordsForMultipleChoice && "(Need 4+ words)"}
+                    </SelectItem>
+                    <SelectItem value="flashcards" className="text-slate-900 dark:text-slate-100">Flashcards</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Question Amount */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Shuffle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  Questions ({questionAmount})
+                </Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max={allWords?.length || 1}
+                  value={questionAmount}
+                  onChange={handleQuestionAmountChange}
+                  className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100"
+                />
               </div>
             </div>
-          </Card>
-        </div>
-      )}
 
-      {/* Exit Dialog */}
-      <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <DialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-gray-100">Exit Test?</DialogTitle>
-            <DialogDescription className="text-gray-500 dark:text-gray-400">
-              Your progress will be lost if you exit now. Are you sure you want to continue?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowExitDialog(false)}
-              className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmExit}
-              className="bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800"
-            >
-              Exit Test
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* Warning Messages */}
+            {!hasWords && (
+              <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription className="text-amber-800 dark:text-amber-300">
+                  No words available for testing. Please add some vocabulary cards first.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!hasEnoughWordsForMultipleChoice && studyMode === "multiple-choice" && (
+              <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="text-blue-800 dark:text-blue-300">
+                  Multiple choice mode requires at least 4 words. Switching to flashcards mode or add more words.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Start Test Button */}
+            {hasWords && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  onClick={startTest}
+                  disabled={createTestSession.isPending || !hasWords}
+                  className="px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  {createTestSession.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Starting Test...
+                    </div>
+                  ) : (
+                    <>
+                      <GraduationCap className="w-6 h-6 mr-2" />
+                      Start Test ({questionAmount} questions)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

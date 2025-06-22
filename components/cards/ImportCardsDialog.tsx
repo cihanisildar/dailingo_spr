@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCards } from '@/hooks/useCards';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -98,11 +98,14 @@ export function ImportCardsDialog({ onImportComplete, className }: ImportCardsDi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className={className}>Import Cards</Button>
+        <Button className="bg-white/20 text-white hover:bg-white/30 border-0">Import Cards</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Import Cards</DialogTitle>
+          <DialogDescription>
+            Import flashcards from an Excel file or paste text with one word per line.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -126,7 +129,7 @@ export function ImportCardsDialog({ onImportComplete, className }: ImportCardsDi
               disabled={loading}
             />
           </div>
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="text">Or paste text (one word per line)</Label>
             <Textarea
               id="text"
@@ -136,10 +139,12 @@ export function ImportCardsDialog({ onImportComplete, className }: ImportCardsDi
               disabled={loading}
               rows={5}
             />
+          </div> */}
+          <div className="flex justify-end">
+            <Button type="submit" disabled={loading || (!file && !text.trim())} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {loading ? 'Importing...' : 'Import'}
+            </Button>
           </div>
-          <Button type="submit" disabled={loading || (!file && !text.trim())}>
-            {loading ? 'Importing...' : 'Import'}
-          </Button>
         </form>
       </DialogContent>
     </Dialog>

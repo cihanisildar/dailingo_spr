@@ -111,18 +111,6 @@ const navItems = [
     title: "Word Lists",
     href: "/dashboard/lists",
     icon: List,
-    children: [
-      {
-        title: "My Lists",
-        href: "/dashboard/lists",
-        icon: List,
-      },
-      {
-        title: "Public Lists",
-        href: "/dashboard/lists/public",
-        icon: Globe,
-      },
-    ],
   },
 ];
 

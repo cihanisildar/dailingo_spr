@@ -57,18 +57,18 @@ export function CustomCalendar({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 bg-white hover:bg-gray-100 rounded-full"
+          className="h-7 w-7 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
           onClick={previousMonth}
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-sm font-semibold text-gray-900">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {format(firstDayCurrentMonth, "MMMM yyyy")}
         </h2>
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 bg-white hover:bg-gray-100 rounded-full"
+          className="h-7 w-7 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300"
           onClick={nextMonth}
         >
           <ChevronRight className="h-4 w-4" />
@@ -78,11 +78,11 @@ export function CustomCalendar({
       {/* Calendar Grid */}
       <div className="mt-1">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800/50 rounded-t-lg">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div
               key={day}
-              className="text-xs font-medium text-gray-500 text-center pb-1"
+              className="text-xs font-medium text-gray-500 dark:text-gray-400 text-center py-2"
             >
               {day}
             </div>
@@ -90,7 +90,7 @@ export function CustomCalendar({
         </div>
 
         {/* Calendar days */}
-        <div className="grid grid-cols-7 text-sm border-t border-l">
+        <div className="grid grid-cols-7 text-sm border border-gray-200 dark:border-gray-700 rounded-b-lg overflow-hidden bg-white dark:bg-gray-800">
           {days.map((day, dayIdx) => {
             const isSelected = isEqual(day, selectedDate);
             const isCurrentMonth = isSameMonth(day, firstDayCurrentMonth);
@@ -103,8 +103,8 @@ export function CustomCalendar({
               <div
                 key={day.toString()}
                 className={cn(
-                  "relative border-b border-r",
-                  !isCurrentMonth && "bg-gray-50"
+                  "relative border-b border-r border-gray-200 dark:border-gray-700 last:border-r-0 [&:nth-child(7n)]:border-r-0",
+                  !isCurrentMonth && "bg-gray-50 dark:bg-gray-800/50"
                 )}
               >
                 <button
@@ -112,9 +112,9 @@ export function CustomCalendar({
                   disabled={!isClickable}
                   className={cn(
                     "w-full aspect-square p-1.5 flex flex-col items-start justify-start relative transition-all duration-200",
-                    isSelected && "bg-blue-50",
-                    isDayToday && !isSelected && "bg-blue-50/50",
-                    !isSelected && !isDayToday && isClickable && "hover:bg-gray-50",
+                    isSelected && "bg-blue-50 dark:bg-blue-900/30",
+                    isDayToday && !isSelected && "bg-blue-50/50 dark:bg-blue-900/20",
+                    !isSelected && !isDayToday && isClickable && "hover:bg-gray-50 dark:hover:bg-gray-700/50",
                     !isClickable && "cursor-default",
                     !isCurrentMonth && "opacity-50"
                   )}
@@ -123,11 +123,11 @@ export function CustomCalendar({
                     dateTime={format(day, "yyyy-MM-dd")}
                     className={cn(
                       "text-xs font-medium",
-                      isSelected && "text-blue-600",
-                      !isSelected && isDayToday && "text-blue-600",
-                      !isSelected && !isDayToday && hasWordsOnDay && "text-gray-900",
-                      !isSelected && !isDayToday && !hasWordsOnDay && "text-gray-500",
-                      !isCurrentMonth && "text-gray-400"
+                      isSelected && "text-blue-600 dark:text-blue-400",
+                      !isSelected && isDayToday && "text-blue-600 dark:text-blue-400",
+                      !isSelected && !isDayToday && hasWordsOnDay && "text-gray-900 dark:text-gray-100",
+                      !isSelected && !isDayToday && !hasWordsOnDay && "text-gray-500 dark:text-gray-400",
+                      !isCurrentMonth && "text-gray-400 dark:text-gray-500"
                     )}
                   >
                     {format(day, "d")}

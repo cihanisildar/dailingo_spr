@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { ApiResponse } from '@/types/api';
 
@@ -50,7 +50,7 @@ export const useApi = () => {
     return result.data as T;
   }, [token]);
 
-  return {
+  return useMemo(() => ({
     get: <T>(endpoint: string, headers?: Record<string, string>) => 
       request<T>(endpoint, { method: 'GET', headers }),
     
@@ -62,5 +62,5 @@ export const useApi = () => {
     
     delete: <T>(endpoint: string, headers?: Record<string, string>) => 
       request<T>(endpoint, { method: 'DELETE', headers }),
-  };
+  }), [request]);
 }; 

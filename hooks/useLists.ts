@@ -35,8 +35,8 @@ export const useLists = () => {
     return api.get<Card[]>(`/lists/${id}/cards`);
   }, [api]);
 
-  const getAvailableCards = useCallback(async (id: string) => {
-    return api.get<Card[]>(`/lists/${id}/available-cards`);
+  const getAvailableCards = useCallback(async (wordListId: string) => {
+    return api.get<Card[]>(`/cards/available?wordListId=${wordListId}`);
   }, [api]);
 
   const addCardsToList = useCallback(async (listId: string, cardIds: string[]) => {

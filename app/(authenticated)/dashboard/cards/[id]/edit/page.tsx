@@ -43,15 +43,15 @@ const EditCardPage = () => {
   }, [card]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="text-gray-900 dark:text-gray-100">Loading...</div>;
   }
 
   if (!card) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh]">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Card not found</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Card not found</h2>
         <Link href="/dashboard/cards">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
             <ArrowLeft className="w-4 h-4" />
             Back to Cards
           </Button>
@@ -119,7 +119,7 @@ const EditCardPage = () => {
     <div className="max-w-7xl mx-auto">
       <form onSubmit={handleSubmit}>
         {/* Header Card */}
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
+        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 mb-6 overflow-hidden border-0">
           <div className="p-4 sm:p-6 lg:p-8">
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
@@ -131,7 +131,7 @@ const EditCardPage = () => {
                           {card.word}
                         </h1>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-[300px]">
+                      <TooltipContent side="bottom" className="max-w-[300px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                         <p className="text-sm">{card.word}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -156,7 +156,7 @@ const EditCardPage = () => {
                       <TooltipTrigger asChild>
                         <p className="text-blue-100 truncate">From list: {card.wordList.name}</p>
                       </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-[300px]">
+                      <TooltipContent side="bottom" className="max-w-[300px] bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                         <p className="text-sm">From list: {card.wordList.name}</p>
                       </TooltipContent>
                     </Tooltip>
@@ -169,14 +169,14 @@ const EditCardPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Main Word Card */}
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="p-6">
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">Word</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Word</span>
                 <Input
                   value={formData.word}
                   onChange={(e) => setFormData((prev) => ({ ...prev, word: e.target.value }))}
-                  className="mt-1 text-2xl font-medium"
+                  className="mt-1 text-2xl font-medium bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   placeholder="Enter word"
                   required
                 />
@@ -185,14 +185,14 @@ const EditCardPage = () => {
           </Card>
 
           {/* Definition Card */}
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
             <div className="p-6">
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">Definition</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Definition</span>
                 <Textarea
                   value={formData.definition}
                   onChange={(e) => setFormData((prev) => ({ ...prev, definition: e.target.value }))}
-                  className="mt-1 min-h-[100px] text-lg"
+                  className="mt-1 min-h-[100px] text-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   placeholder="Enter definition"
                   required
                 />
@@ -203,16 +203,16 @@ const EditCardPage = () => {
           {/* Left Column */}
           <div className="space-y-6">
             {/* Synonyms Card */}
-            <Card className="overflow-hidden border-none shadow-sm">
+            <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-medium text-gray-900">Synonyms</h2>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Synonyms</h2>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddItem("synonyms")}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <Plus className="w-4 h-4" /> Add Synonym
                   </Button>
@@ -224,14 +224,14 @@ const EditCardPage = () => {
                         value={synonym}
                         onChange={(e) => handleArrayChange("synonyms", index, e.target.value)}
                         placeholder="Enter synonym"
-                        className="flex-1"
+                        className="flex-1 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveItem("synonyms", index)}
-                        className="hover:bg-gray-100"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -242,16 +242,16 @@ const EditCardPage = () => {
             </Card>
 
             {/* Examples Card */}
-            <Card className="overflow-hidden border-none shadow-sm">
+            <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-medium text-gray-900">Examples</h2>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Examples</h2>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddItem("examples")}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <Plus className="w-4 h-4" /> Add Example
                   </Button>
@@ -263,14 +263,14 @@ const EditCardPage = () => {
                         value={example}
                         onChange={(e) => handleArrayChange("examples", index, e.target.value)}
                         placeholder="Enter example sentence"
-                        className="flex-1"
+                        className="flex-1 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveItem("examples", index)}
-                        className="hover:bg-gray-100 h-auto"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 h-auto"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -284,16 +284,16 @@ const EditCardPage = () => {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Antonyms Card */}
-            <Card className="overflow-hidden border-none shadow-sm">
+            <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-medium text-gray-900">Antonyms</h2>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Antonyms</h2>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleAddItem("antonyms")}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <Plus className="w-4 h-4" /> Add Antonym
                   </Button>
@@ -305,14 +305,14 @@ const EditCardPage = () => {
                         value={antonym}
                         onChange={(e) => handleArrayChange("antonyms", index, e.target.value)}
                         placeholder="Enter antonym"
-                        className="flex-1"
+                        className="flex-1 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveItem("antonyms", index)}
-                        className="hover:bg-gray-100"
+                        className="hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -323,15 +323,15 @@ const EditCardPage = () => {
             </Card>
 
             {/* Notes Card */}
-            <Card className="overflow-hidden border-none shadow-sm">
+            <Card className="overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
               <div className="p-6">
                 <label className="block">
-                  <span className="text-lg font-medium text-gray-900 block mb-4">Notes</span>
+                  <span className="text-lg font-medium text-gray-900 dark:text-gray-100 block mb-4">Notes</span>
                   <Textarea
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder="Add any additional notes about the word"
-                    className="min-h-[150px]"
+                    className="min-h-[150px] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                   />
                 </label>
               </div>

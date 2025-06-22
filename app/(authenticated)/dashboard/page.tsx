@@ -17,6 +17,10 @@ import {
   BarChart,
   Award,
   AlertTriangle,
+  ChevronRight,
+  Star,
+  Target,
+  Zap,
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { usePathname } from "next/navigation";
@@ -74,22 +78,27 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="min-h-screen space-y-8 animate-in fade-in-50 duration-500">
         {/* Welcome Section Skeleton */}
-        <div className="bg-gradient-to-r from-blue-600/50 to-blue-700/50 rounded-xl md:rounded-2xl p-6 md:p-8 animate-pulse">
-          <div className="h-8 w-48 bg-white/20 rounded mb-2" />
-          <div className="h-4 w-64 bg-white/20 rounded" />
+        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600/90 via-purple-600/80 to-pink-500/70 rounded-3xl p-8 md:p-12">
+          <div className="absolute inset-0 bg-black/10" />
+          <div className="relative z-10">
+            <div className="h-10 w-64 bg-white/20 rounded-2xl mb-4 animate-pulse" />
+            <div className="h-6 w-80 bg-white/15 rounded-xl animate-pulse" />
+          </div>
+          <div className="absolute -top-4 -right-4 w-32 h-32 bg-white/5 rounded-full animate-pulse" />
+          <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-white/5 rounded-full animate-pulse" />
         </div>
 
         {/* Quick Stats Skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="p-4 md:p-6 animate-pulse">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="p-2 md:p-3 bg-gray-200 rounded-lg h-10 w-10 md:h-12 md:w-12" />
+            <Card key={i} className="p-6 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-0 shadow-xl animate-pulse">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="p-4 bg-gray-200 dark:bg-gray-700 rounded-2xl h-16 w-16" />
                 <div className="space-y-2">
-                  <div className="h-3 md:h-4 w-16 md:w-24 bg-gray-200 rounded" />
-                  <div className="h-5 md:h-6 w-12 md:w-16 bg-gray-200 rounded" />
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                  <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded-xl" />
                 </div>
               </div>
             </Card>
@@ -97,15 +106,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
           {[...Array(2)].map((_, i) => (
-            <Card key={i} className="p-4 md:p-6 bg-gray-200 animate-pulse">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="h-5 md:h-6 w-24 md:w-32 bg-gray-300 rounded" />
-                  <div className="h-3 md:h-4 w-32 md:w-48 bg-gray-300 rounded" />
+            <Card key={i} className="p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-0 shadow-xl animate-pulse">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3">
+                    <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                    <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                  </div>
+                  <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded-lg" />
                 </div>
-                <div className="h-5 md:h-6 w-5 md:w-6 bg-gray-300 rounded" />
               </div>
             </Card>
           ))}
@@ -114,157 +125,290 @@ export default function DashboardPage() {
     );
   }
 
+  const getMotivationalMessage = () => {
+    const hour = new Date().getHours();
+    const todayCount = todayCards?.length || 0;
+    const streakCount = stats.currentStreak || 0;
+
+    if (todayCount === 0 && streakCount > 0) {
+      return "Great streak! Ready for today's session?";
+    } else if (todayCount > 0) {
+      return `${todayCount} cards waiting for you!`;
+    } else if (hour < 12) {
+      return "Good morning! Let's start learning.";
+    } else if (hour < 18) {
+      return "Good afternoon! Time to practice.";
+    }
+    return "Good evening! End your day with learning.";
+  };
+
   return (
-    <div className="pt-0">
-      {/* Mobile Navigation */}
-      <div className="lg:hidden mb-4">
-        <div className="grid grid-cols-4 gap-3 px-1">
+    <div className="min-h-screen animate-in fade-in-50 duration-700">
+      {/* Enhanced Mobile Navigation */}
+      <div className="lg:hidden mb-6">
+        <div className="grid grid-cols-4 gap-2 p-1 bg-gray-50 dark:bg-gray-900/50 rounded-2xl backdrop-blur-sm border border-gray-200/50 dark:border-gray-800">
           <Link href="/dashboard/review">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/review' ? 'bg-emerald-900/20 border-emerald-800 dark:bg-emerald-900/30' : 'hover:bg-emerald-900/10 dark:hover:bg-emerald-900/20'}`}>
+            <Card className={`p-4 text-center transition-all duration-300 border-0 ${
+              pathname === '/dashboard/review' 
+                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/25 scale-105' 
+                : 'bg-white/60 dark:bg-gray-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:scale-102'
+            }`}>
               <div className="flex flex-col items-center gap-2">
-                <PlayCircle className={`w-6 h-6 ${pathname === '/dashboard/review' ? 'text-emerald-400' : 'text-emerald-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/review' ? 'text-emerald-400' : 'text-emerald-500'}`}>Review</span>
+                <div className={`p-2 rounded-xl ${
+                  pathname === '/dashboard/review' 
+                    ? 'bg-white/20' 
+                    : 'bg-emerald-100 dark:bg-emerald-900/30'
+                }`}>
+                  <PlayCircle className={`w-5 h-5 ${
+                    pathname === '/dashboard/review' ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'
+                  }`} />
+                </div>
+                <span className={`text-xs font-medium ${
+                  pathname === '/dashboard/review' ? 'text-white' : 'text-emerald-700 dark:text-emerald-300'
+                }`}>Review</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/cards">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/cards' ? 'bg-blue-900/20 border-blue-800 dark:bg-blue-900/30' : 'hover:bg-blue-900/10 dark:hover:bg-blue-900/20'}`}>
+            <Card className={`p-4 text-center transition-all duration-300 border-0 ${
+              pathname === '/dashboard/cards' 
+                ? 'bg-blue-500 shadow-lg shadow-blue-500/25 scale-105' 
+                : 'bg-white/60 dark:bg-gray-800/60 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-102'
+            }`}>
               <div className="flex flex-col items-center gap-2">
-                <Layers className={`w-6 h-6 ${pathname === '/dashboard/cards' ? 'text-blue-400' : 'text-blue-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/cards' ? 'text-blue-400' : 'text-blue-500'}`}>Cards</span>
+                <div className={`p-2 rounded-xl ${
+                  pathname === '/dashboard/cards' 
+                    ? 'bg-white/20' 
+                    : 'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
+                  <Layers className={`w-5 h-5 ${
+                    pathname === '/dashboard/cards' ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                  }`} />
+                </div>
+                <span className={`text-xs font-medium ${
+                  pathname === '/dashboard/cards' ? 'text-white' : 'text-blue-700 dark:text-blue-300'
+                }`}>Cards</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/lists">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/lists' ? 'bg-purple-900/20 border-purple-800 dark:bg-purple-900/30' : 'hover:bg-purple-900/10 dark:hover:bg-purple-900/20'}`}>
+            <Card className={`p-4 text-center transition-all duration-300 border-0 ${
+              pathname === '/dashboard/lists' 
+                ? 'bg-purple-500 shadow-lg shadow-purple-500/25 scale-105' 
+                : 'bg-white/60 dark:bg-gray-800/60 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:scale-102'
+            }`}>
               <div className="flex flex-col items-center gap-2">
-                <Bookmark className={`w-6 h-6 ${pathname === '/dashboard/lists' ? 'text-purple-400' : 'text-purple-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/lists' ? 'text-purple-400' : 'text-purple-500'}`}>Lists</span>
+                <div className={`p-2 rounded-xl ${
+                  pathname === '/dashboard/lists' 
+                    ? 'bg-white/20' 
+                    : 'bg-purple-100 dark:bg-purple-900/30'
+                }`}>
+                  <Bookmark className={`w-5 h-5 ${
+                    pathname === '/dashboard/lists' ? 'text-white' : 'text-purple-600 dark:text-purple-400'
+                  }`} />
+                </div>
+                <span className={`text-xs font-medium ${
+                  pathname === '/dashboard/lists' ? 'text-white' : 'text-purple-700 dark:text-purple-300'
+                }`}>Lists</span>
               </div>
             </Card>
           </Link>
           <Link href="/dashboard/test">
-            <Card className={`p-4 text-center transition-all ${pathname === '/dashboard/test' ? 'bg-amber-900/20 border-amber-800 dark:bg-amber-900/30' : 'hover:bg-amber-900/10 dark:hover:bg-amber-900/20'}`}>
+            <Card className={`p-4 text-center transition-all duration-300 border-0 ${
+              pathname === '/dashboard/test' 
+                ? 'bg-amber-500 shadow-lg shadow-amber-500/25 scale-105' 
+                : 'bg-white/60 dark:bg-gray-800/60 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:scale-102'
+            }`}>
               <div className="flex flex-col items-center gap-2">
-                <FileText className={`w-6 h-6 ${pathname === '/dashboard/test' ? 'text-amber-400' : 'text-amber-500'}`} />
-                <span className={`text-sm font-medium ${pathname === '/dashboard/test' ? 'text-amber-400' : 'text-amber-500'}`}>Test</span>
+                <div className={`p-2 rounded-xl ${
+                  pathname === '/dashboard/test' 
+                    ? 'bg-white/20' 
+                    : 'bg-amber-100 dark:bg-amber-900/30'
+                }`}>
+                  <FileText className={`w-5 h-5 ${
+                    pathname === '/dashboard/test' ? 'text-white' : 'text-amber-600 dark:text-amber-400'
+                  }`} />
+                </div>
+                <span className={`text-xs font-medium ${
+                  pathname === '/dashboard/test' ? 'text-white' : 'text-amber-700 dark:text-amber-300'
+                }`}>Test</span>
               </div>
             </Card>
           </Link>
         </div>
       </div>
 
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 rounded-3xl p-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Welcome Back!</h1>
-        <p className="text-blue-100 dark:text-blue-200">Track your progress and keep learning.</p>
+      {/* Modern Welcome Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-6 shadow-xl">
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent" />
+        
+        {/* Decorative elements */}
+        <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/10 rounded-full blur-xl animate-pulse" />
+        <div className="absolute -bottom-6 -left-6 w-28 h-28 bg-white/5 rounded-full blur-2xl animate-pulse delay-1000" />
+        
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
+                Welcome Back{session?.user?.name ? `, ${session.user.name}!` : '!'}
+              </h1>
+              <p className="text-base text-white/80 mb-1 font-medium">
+                {getMotivationalMessage()}
+              </p>
+              <p className="text-sm text-white/60">
+                Continue your learning journey and achieve your goals.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Trophy className="w-4 h-4 text-yellow-300" />
+              </div>
+              <div className="px-2 py-0.5 bg-white/20 rounded-full backdrop-blur-sm">
+                <span className="text-xs font-medium text-white/90">
+                  Day {stats.currentStreak || 1}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-        <Card className="p-6 bg-orange-100 dark:bg-orange-900/30">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 dark:bg-orange-900/50 p-3 rounded-lg">
-              <Flame className="w-6 h-6 text-orange-400" />
+      {/* Enhanced Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6">
+        <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-md group-hover:shadow-orange-500/25 transition-all duration-300">
+              <Flame className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Current Streak</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.currentStreak || 0} Days</h3>
+              <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-1">Current Streak</p>
+              <h3 className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                {stats.currentStreak || 0}
+              </h3>
+              <p className="text-xs text-orange-600 dark:text-orange-400">Days</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-blue-100 dark:bg-blue-900/30">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 dark:bg-blue-900/50 p-3 rounded-lg">
-              <Clock className="w-6 h-6 text-blue-400" />
+        <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md group-hover:shadow-blue-500/25 transition-all duration-300">
+              <Clock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Today's Review</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{todayCards?.length || 0} Cards</h3>
+              <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1">Today's Review</p>
+              <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                {todayCards?.length || 0}
+              </h3>
+              <p className="text-xs text-blue-600 dark:text-blue-400">Cards</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-emerald-100 dark:bg-emerald-900/30">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 dark:bg-emerald-900/50 p-3 rounded-lg">
-              <BookOpen className="w-6 h-6 text-emerald-400" />
+        <Card className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-md group-hover:shadow-emerald-500/25 transition-all duration-300">
+              <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Total Cards</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{allCards?.length || 0}</h3>
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Total Cards</p>
+              <h3 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                {allCards?.length || 0}
+              </h3>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400">Created</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-purple-100 dark:bg-purple-900/30">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/80 dark:bg-purple-900/50 p-3 rounded-lg">
-              <ListChecks className="w-6 h-6 text-purple-400" />
+        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group">
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md group-hover:shadow-purple-500/25 transition-all duration-300">
+              <ListChecks className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Word Lists</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{wordLists?.length || 0}</h3>
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">Word Lists</p>
+              <h3 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                {wordLists?.length || 0}
+              </h3>
+              <p className="text-xs text-purple-600 dark:text-purple-400">Active</p>
             </div>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        {/* Learning Progress */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6">
+        {/* Enhanced Learning Progress */}
+        <Card className="p-5 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-0 shadow-lg">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Learning Progress</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Your vocabulary journey</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Learning Progress</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Your vocabulary mastery journey</p>
             </div>
-            <BookOpen className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl shadow-md">
+              <BarChart2 className="w-4 h-4 text-white" />
+            </div>
           </div>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl transition-all duration-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-900/20 dark:bg-emerald-900/30 rounded-lg">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <div className="p-2 bg-emerald-500 rounded-lg shadow-sm">
+                  <CheckCircle className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-gray-600 dark:text-gray-300">Mastered Words</span>
+                <div>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Mastered Words</span>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">Fully learned</p>
+                </div>
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.completedCards || 0}</span>
+              <div className="text-right">
+                <span className="text-xl font-bold text-emerald-600">{stats.completedCards || 0}</span>
+              </div>
             </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl transition-all duration-300 hover:bg-blue-100 dark:hover:bg-blue-950/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-900/20 dark:bg-blue-900/30 rounded-lg">
-                  <BookOpen className="w-4 h-4 text-blue-400" />
+                <div className="p-2 bg-blue-500 rounded-lg shadow-sm">
+                  <Target className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-gray-600 dark:text-gray-300">In Progress</span>
+                <div>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">In Progress</span>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Actively learning</p>
+                </div>
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.activeCards || 0}</span>
+              <div className="text-right">
+                <span className="text-xl font-bold text-blue-600">{stats.activeCards || 0}</span>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl transition-all duration-300 hover:bg-amber-100 dark:hover:bg-amber-950/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-900/20 dark:bg-amber-900/30 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <div className="p-2 bg-amber-500 rounded-lg shadow-sm">
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-gray-600 dark:text-gray-300">Needs Review</span>
+                <div>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Needs Review</span>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">Due for practice</p>
+                </div>
               </div>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{stats.needsReview || 0}</span>
+              <div className="text-right">
+                <span className="text-xl font-bold text-amber-600">{stats.needsReview || 0}</span>
+              </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Overall Progress</span>
-                <span className="text-sm font-medium text-gray-900">
+            <div className="mt-5 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Overall Progress</span>
+                <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                   {stats.completedCards && stats.totalCards 
                     ? Math.round((stats.completedCards / stats.totalCards) * 100)
                     : 0}%
                 </span>
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="relative w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600" />
                 <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  className="relative h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out shadow-sm"
                   style={{ 
                     width: `${stats.completedCards && stats.totalCards 
                       ? Math.round((stats.completedCards / stats.totalCards) * 100)
@@ -276,66 +420,69 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Upcoming Reviews */}
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        {/* Enhanced Upcoming Reviews */}
+        <Card className="p-5 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-0 shadow-lg">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Upcoming Reviews</h2>
-              <p className="text-sm text-gray-500">Next 7 days</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Upcoming Reviews</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Next 7 days schedule</p>
             </div>
-            <Calendar className="w-5 h-5 text-gray-400" />
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
+              <Calendar className="w-4 h-4 text-white" />
+            </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[...Array(7)].map((_, index) => {
               const date = addDays(new Date(), index);
               const dateStr = format(date, 'yyyy-MM-dd');
               const reviewsForDay = (upcomingReviews.cards as Record<string, GroupedCards>)[dateStr] || { total: 0 };
+              const isToday = index === 0;
+              const cardCount = reviewsForDay.total || 0;
 
               return (
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <span className="text-gray-600">{format(date, 'EEE, MMM d')}</span>
-                  <span className="font-semibold">{reviewsForDay.total || 0} cards</span>
+                <div 
+                  key={index} 
+                  className={`flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
+                    isToday 
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800' 
+                      : 'bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {isToday && (
+                      <div className="p-1.5 bg-blue-500 rounded-lg">
+                        <Star className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <span className={`font-semibold text-sm ${
+                        isToday 
+                          ? 'text-blue-900 dark:text-blue-100' 
+                          : 'text-gray-900 dark:text-gray-100'
+                      }`}>
+                        {format(date, 'EEE, MMM d')}
+                      </span>
+                      {isToday && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400">Today</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-base font-bold ${
+                      cardCount > 0 
+                        ? 'text-blue-600 dark:text-blue-400' 
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {cardCount}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">cards</span>
+                  </div>
                 </div>
               );
             })}
           </div>
         </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-        <Link href="/dashboard/review">
-          <Card className="p-6 hover:shadow-lg transition-all group">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
-                  Start Today's Review
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Review your cards and maintain your streak
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/cards">
-          <Card className="p-6 hover:shadow-lg transition-all group">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
-                  Manage Your Cards
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Add, edit, or organize your flashcards
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
-            </div>
-          </Card>
-        </Link>
       </div>
     </div>
   );

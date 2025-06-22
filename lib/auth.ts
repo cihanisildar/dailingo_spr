@@ -82,47 +82,69 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       console.log('[DEBUG] signIn callback triggered', { provider: account?.provider, user, profile });
 
-      if (account?.provider === 'google' && user) {
-        try {
-          console.log('[DEBUG] Attempting to sync Google user to backend:', { email: user.email, name: user.name, id: profile?.sub });
-
-          const response = await fetch('https://repeekerserver-production.up.railway.app/api/auth/sync-google-user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: profile?.sub, // Google's unique user ID
-              email: user.email,
-              name: user.name,
-              image: user.image,
-            }),
-          });
-
-          const result = await response.json();
-          console.log('[DEBUG] Sync response:', result);
-
-          if (result.status === 'error' && !response.ok) {
-            console.error('[DEBUG] Failed to sync user to backend:', result);
-          }
-        } catch (error) {
-          console.error('[DEBUG] Error syncing user to backend:', error);
-        }
-      } else {
-        console.log('[DEBUG] signIn callback: Not a Google provider or user missing');
-      }
+      // User sync is handled in the JWT callback for proper token management
 
       return true;
     },
-    async jwt({ token, user }) {
-      console.log('[DEBUG] JWT Callback - Input:', { token, user });
+    async jwt({ token, user, account }) {
+      console.log('[DEBUG] JWT Callback - Input:', { token, user, account, isFirstSignIn: !!user });
       
-      // On first login, user is present
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.picture = user.image;
+      // On first login, user is present - this is when we need to map Google ID to internal ID
+      if (user && account) {
+        console.log('[DEBUG] First sign-in detected, processing user mapping...');
+        
+        if (account.provider === 'google') {
+          try {
+            console.log('[DEBUG] Fetching internal user ID for Google user:', user.email, 'with Google ID:', user.id);
+            const response = await fetch('https://repeekerserver-production.up.railway.app/api/auth/sync-google-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: user.id, // Google's unique user ID
+                email: user.email,
+                name: user.name,
+                image: user.image,
+              }),
+            });
+
+            const result = await response.json();
+            console.log('[DEBUG] Sync response in JWT:', result);
+
+            if (result.status === 'success' && result.data && result.data.user && result.data.user.id) {
+              // Use the internal database ID instead of the Google ID
+              token.id = result.data.user.id;
+              token.email = result.data.user.email || user.email;
+              token.name = result.data.user.name || user.name;
+              token.picture = result.data.user.image || user.image;
+              console.log('[DEBUG] Updated token with internal database user:', {
+                oldId: user.id,
+                newId: token.id,
+                email: token.email
+              });
+            } else {
+              // Fallback to using the Google ID if sync fails
+              console.error('[DEBUG] Sync failed, using Google ID as fallback:', result);
+              token.id = user.id;
+              token.email = user.email;
+              token.name = user.name;
+              token.picture = user.image;
+            }
+          } catch (error) {
+            console.error('[DEBUG] Error getting internal user ID, using Google ID as fallback:', error);
+            token.id = user.id;
+            token.email = user.email;
+            token.name = user.name;
+            token.picture = user.image;
+          }
+        } else {
+          // For non-Google providers (like credentials), use the user data as-is
+          token.id = user.id;
+          token.email = user.email;
+          token.name = user.name;
+          token.picture = user.image;
+        }
       }
       
       // Always generate a JWT for accessToken if we have the info

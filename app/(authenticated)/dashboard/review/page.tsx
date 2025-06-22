@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card as CardUI } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTodayCards } from "@/hooks/useCards";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, BookOpen, Brain, Target, Zap } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -77,159 +77,256 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Review Cards</h1>
-        <p className="text-blue-100 dark:text-blue-200">
-          Choose your preferred review mode to strengthen your memory.
-        </p>
-      </div>
-
-      {/* Progress Section */}
-      {isLoading ? (
-        <CardUI className="p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-6 w-48" />
-            <div className="space-y-2">
-              <Skeleton className="h-2 w-full" />
-              <div className="flex justify-between">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-12" />
+    <div className="min-h-screen  dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+      <div className="max-w-6xl  space-y-8">
+        {/* Header Section */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 dark:from-blue-900 dark:via-indigo-900 dark:to-purple-900 rounded-3xl p-8 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                <Brain className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-white mb-2">Review Session</h1>
+                <p className="text-blue-100 dark:text-blue-200 text-lg">
+                  Strengthen your vocabulary with interactive learning modes
+                </p>
               </div>
             </div>
           </div>
-        </CardUI>
-      ) : total > 0 ? (
-        <CardUI className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Today's Progress</h2>
-              {completedCount === total && total > 0 && !repeatMode && (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Completed</span>
+        </div>
+
+        {/* Progress Section */}
+        {isLoading ? (
+          <CardUI className="p-8 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-64" />
+              <div className="space-y-4">
+                <Skeleton className="h-3 w-full rounded-full" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              </div>
+            </div>
+          </CardUI>
+        ) : total > 0 ? (
+          <CardUI className="p-8 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Target className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Today's Progress</h2>
+                </div>
+                {completedCount === total && total > 0 && !repeatMode && (
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-semibold">Completed!</span>
+                  </div>
+                )}
+                {repeatMode && (
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-full border border-blue-200 dark:border-blue-800">
+                    <Zap className="w-5 h-5" />
+                    <span className="font-semibold">Repeat Mode</span>
+                  </div>
+                )}
+              </div>
+              
+              {!repeatMode && (
+                <div className="space-y-4">
+                  <div className="relative h-4 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full overflow-hidden shadow-inner">
+                    <div
+                      className={`h-full transition-all duration-700 ease-out rounded-full shadow-lg ${
+                        (completedCount === total && total > 0 && !repeatMode)
+                          ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500'
+                          : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500'
+                      }`}
+                      style={{ width: `${(completedCount / total) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                        {completedCount} of {total} cards
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">completed</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                        {((completedCount / total) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {completedCount === total && total > 0 && !repeatMode && (
+                <div className="mt-6 p-6 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-full mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-300 mb-2">
+                      Fantastic Work! 🎉
+                    </h3>
+                    <p className="text-emerald-700 dark:text-emerald-400 mb-4 text-lg">
+                      You've completed all your reviews for today. Ready for another round?
+                    </p>
+                    <Button
+                      className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                      onClick={handleStartNewSession}
+                      disabled={startingNewSession}
+                    >
+                      {startingNewSession ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Starting...
+                        </div>
+                      ) : (
+                        'Start New Session'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {repeatMode && (
-                <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-sm font-medium">Repeat Session</span>
+                <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 shadow-lg">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-full mb-4">
+                      <Zap className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 mb-2">
+                      Repeat Session Active ⚡
+                    </h3>
+                    <p className="text-blue-700 dark:text-blue-400 mb-2 text-lg">
+                      You've already completed today's review.
+                    </p>
+                    <p className="text-blue-600 dark:text-blue-400 text-sm mb-4">
+                      This session won't affect your daily progress.
+                    </p>
+                    <Button
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                      onClick={handleEndRepeatSession}
+                    >
+                      End Repeat Session
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-            {!repeatMode && (
-              <div className="space-y-2">
-                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      (completedCount === total && total > 0 && !repeatMode)
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700'
-                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700'
-                    }`}
-                    style={{ width: `${(completedCount / total) * 100}%` }}
-                  />
+          </CardUI>
+        ) : null}
+
+        {/* No cards info message */}
+        {(!hasCards && !isLoading) && (
+          <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-3xl border border-blue-200 dark:border-blue-800 shadow-xl">
+            <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-full mb-4">
+              <BookOpen className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-blue-800 dark:text-blue-300 mb-2">No Cards Available</h3>
+            <p className="text-blue-600 dark:text-blue-400 text-center max-w-md">
+              Add new words to your lists to start your learning journey and build your vocabulary!
+            </p>
+          </div>
+        )}
+
+        {/* Mode Selection */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Multiple Choice Card */}
+          <CardUI 
+            className={`group relative overflow-hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl transition-all duration-500 ${
+              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'cursor-pointer hover:shadow-2xl hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-slate-800/80'
+            }`}
+            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && hasEnoughCardsForMultipleChoice && handleStartSession('multiple-choice')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="relative p-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                  <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                  <span>{completedCount} of {total} cards completed</span>
-                  <span>{((completedCount / total) * 100).toFixed(0)}%</span>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Multiple Choice</h3>
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-medium">Quick Test Mode</span>
+                    <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                    <span className="text-sm">4+ cards required</span>
+                  </div>
                 </div>
               </div>
-            )}
-            {completedCount === total && total > 0 && !repeatMode && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800 flex flex-col items-center">
-                <p className="text-green-700 dark:text-green-400 text-center mb-2">
-                  Great job! You've completed all your reviews for today. You can start a new session to review again.
-                </p>
-                <Button
-                  className="mt-2"
-                  onClick={handleStartNewSession}
-                  disabled={startingNewSession}
+              
+              <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
+                Challenge yourself with interactive multiple choice questions. Perfect for quick knowledge assessment and focused learning.
+              </p>
+              
+              <div className="pt-4">
+                <Button 
+                  className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
+                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice
+                      ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
+                  }`}
+                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice}
                 >
-                  {startingNewSession ? 'Starting...' : 'Start New Session'}
+                  {!hasCards ? 'No Cards Available' : 
+                   !hasEnoughCardsForMultipleChoice ? 'Need 4+ Cards' : 
+                   ((completedCount === total && total > 0) && !repeatMode) ? 'Session Completed' : 
+                   'Start Quiz'}
                 </Button>
               </div>
-            )}
-            {repeatMode && (
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex flex-col items-center shadow-sm">
-                <div className="flex items-center mb-2">
-                  <svg className="w-6 h-6 text-blue-500 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5 9a7 7 0 0114 0v6a7 7 0 01-14 0V9z" />
-                  </svg>
-                  <span className="text-base font-semibold text-blue-700 dark:text-blue-400">Repeat Session</span>
+            </div>
+          </CardUI>
+
+          {/* Flashcards Card */}
+          <CardUI 
+            className={`group relative overflow-hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl transition-all duration-500 ${
+              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession 
+                ? 'opacity-50 cursor-not-allowed' 
+                : 'cursor-pointer hover:shadow-2xl hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-slate-800/80'
+            }`}
+            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('flashcard')}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="relative p-8 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="p-4 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <p className="text-blue-800 dark:text-blue-300 text-center text-lg font-medium mb-2">
-                  You have already completed today's review.
-                </p>
-                <p className="text-blue-600 dark:text-blue-400 text-center text-sm mb-4">
-                  You are in a repeat session. This does not affect your daily progress.
-                </p>
-                <button
-                  className="w-full bg-blue-500 dark:bg-blue-600 text-white rounded-lg py-3 font-bold text-base shadow hover:bg-blue-600 dark:hover:bg-blue-700 transition"
-                  onClick={handleEndRepeatSession}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">Flashcards</h3>
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                    <span className="text-sm font-medium">Interactive Review</span>
+                    <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
+                    <span className="text-sm">Self-paced</span>
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
+                Review vocabulary with classic flashcard experience. Flip cards to reveal definitions and track your knowledge retention.
+              </p>
+              
+              <div className="pt-4">
+                <Button 
+                  className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
+                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession
+                      ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl'
+                  }`}
+                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}
                 >
-                  End Repeat Session
-                </button>
+                  {!hasCards ? 'No Cards Available' : 
+                   ((completedCount === total && total > 0) && !repeatMode) ? 'Session Completed' : 
+                   'Start Flashcards'}
+                </Button>
               </div>
-            )}
-          </div>
-        </CardUI>
-      ) : null}
-
-      {/* No cards info message */}
-      {(!hasCards && !isLoading) && (
-        <div className="flex flex-col items-center justify-center p-6 mb-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-          <span className="text-4xl mb-2">📚</span>
-          <p className="text-blue-700 dark:text-blue-400 font-medium">No cards available for review.</p>
-          <p className="text-blue-500 dark:text-blue-400 text-sm mt-1">Add new words to your lists to start practicing!</p>
+            </div>
+          </CardUI>
         </div>
-      )}
-
-      {/* Mode Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <CardUI 
-          className={`p-6 ${!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
-          onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && hasEnoughCardsForMultipleChoice && handleStartSession('multiple-choice')}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Multiple Choice Test</h3>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Test your knowledge with multiple choice questions. Choose the correct definition for each word.
-            </p>
-            <Button className="w-full" disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice}>
-              {!hasCards ? 'No Cards' : !hasEnoughCardsForMultipleChoice ? 'Need 4+ Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Test'}
-            </Button>
-          </div>
-        </CardUI>
-
-        <CardUI 
-          className={`p-6 ${!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}
-          onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('flashcard')}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Flashcards</h3>
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              Review words with interactive flashcards. Flip to see definitions and mark if you knew them.
-            </p>
-            <Button className="w-full" disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}>
-              {!hasCards ? 'No Cards' : ((completedCount === total && total > 0) && !repeatMode) ? 'Completed' : 'Start Flashcards'}
-            </Button>
-          </div>
-        </CardUI>
       </div>
     </div>
   );

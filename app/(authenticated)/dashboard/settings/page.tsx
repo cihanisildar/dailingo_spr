@@ -64,7 +64,7 @@ export default function SettingsPage() {
       }
     };
     loadSettings();
-  }, [getSettings]);
+  }, []); // Empty dependency array - only run once on mount
 
   const handleSave = async () => {
     setIsLoading(true);
