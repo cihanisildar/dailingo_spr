@@ -2,6 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { CustomCalendar } from '@/components/ui/custom-calendar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useApi } from '@/hooks/useApi';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -49,8 +50,8 @@ const useCalendarData = (selectedDate: Date) => {
 // Loading skeleton component
 function CalendarSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30">
+      <div className="max-w-7xl space-y-6">
         <div className="bg-blue-600 dark:bg-blue-800 rounded-3xl p-6 animate-pulse">
           <div className="h-8 w-64 bg-white/20 rounded-lg mb-2" />
           <div className="h-6 w-48 bg-white/20 rounded-lg mb-4" />
@@ -103,6 +104,8 @@ function CalendarSkeleton() {
 
 export default function CalendarPage() {
   const [date, setDate] = useState<Date>(new Date());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
   const { data, isLoading } = useCalendarData(date);
 
   if (isLoading) {
@@ -139,9 +142,16 @@ export default function CalendarPage() {
 
   const totalWords = Object.values(cardsPerDay).reduce((sum: number, cards) => sum + (cards as WordCard[]).length, 0);
 
+  // Handle day selection to open dialog
+  const handleDateSelect = (selectedDate: Date) => {
+    setDate(selectedDate);
+    setSelectedDayDate(selectedDate);
+    setDialogOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30">
+      <div className="max-w-7xl space-y-6">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -161,57 +171,52 @@ export default function CalendarPage() {
         </div>
 
         {/* Calendar Section */}
-        <div className="grid md:grid-cols-[1fr_300px] gap-6">
+        <div className="w-full">
           <Card className="p-6 shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CustomCalendar
               selectedDate={date}
-              onSelect={setDate}
+              onSelect={handleDateSelect}
               renderDay={renderDay}
               hasWords={hasWords}
               className="min-h-[400px] md:min-h-0"
             />
           </Card>
-
-          {/* Details Panel - Hidden on Mobile */}
-          <Card className="hidden md:block p-6 bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 shadow-lg">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {format(date, 'MMMM d, yyyy')}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {getWordCount(date) === 0 
-                    ? "No words added on this day" 
-                    : `${getWordCount(date)} words added`}
-                </p>
-              </div>
-
-              {getWordCount(date) > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Words added:</h4>
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {cardsPerDay[format(date, 'yyyy-MM-dd')]?.map((card: WordCard) => (
-                      <div key={card.id} className="text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600/50 transition-colors">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{card.word}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{card.definition}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {getWordCount(date) === 0 && (
-                <div className="text-center py-8">
-                  <CalendarIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    No vocabulary added on this day
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
         </div>
       </div>
+
+      {/* Words Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDayDate ? format(selectedDayDate, 'MMMM d, yyyy') : 'Words'}
+            </DialogTitle>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {selectedDayDate && getWordCount(selectedDayDate) === 0 
+                ? "No words added on this day" 
+                : `${selectedDayDate ? getWordCount(selectedDayDate) : 0} words added`}
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-4">
+            {selectedDayDate && getWordCount(selectedDayDate) > 0 ? (
+              cardsPerDay[format(selectedDayDate, 'yyyy-MM-dd')]?.map((card: WordCard) => (
+                <div key={card.id} className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                  <div className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{card.word}</div>
+                  <div className="text-gray-600 dark:text-gray-300">{card.definition}</div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <CalendarIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No vocabulary added on this day
+                </p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
