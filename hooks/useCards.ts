@@ -266,6 +266,7 @@ export function useUpdateReview() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardKeys.today() });
       queryClient.invalidateQueries({ queryKey: cardKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["stats"] }); // Invalidate stats to update reviewedToday
     },
   });
 }

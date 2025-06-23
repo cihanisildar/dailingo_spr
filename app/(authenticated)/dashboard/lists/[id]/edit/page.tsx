@@ -235,8 +235,8 @@ export default function EditListPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl animate-pulse" />
-        <div className="h-64 bg-white rounded-3xl animate-pulse" />
+        <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-3xl animate-pulse" />
+        <div className="h-64 bg-white dark:bg-gray-800 rounded-3xl animate-pulse" />
       </div>
     );
   }
@@ -244,10 +244,10 @@ export default function EditListPage() {
   if (!list) {
     return (
       <div className="space-y-8">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-3xl p-8">
           <div className="text-center text-white">
             <h2 className="text-2xl font-bold">List not found</h2>
-            <p className="text-blue-100 mt-2">This list may have been deleted or you don't have access to it.</p>
+            <p className="text-blue-100 dark:text-blue-200 mt-2">This list may have been deleted or you don't have access to it.</p>
             <Link href="/dashboard/lists">
               <Button variant="outline" className="mt-4 bg-white/20 text-white hover:bg-white/30 border-0">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -263,7 +263,7 @@ export default function EditListPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 rounded-3xl p-8">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -291,35 +291,35 @@ export default function EditListPage() {
               </Button>
             </div>
           </div>
-          <p className="text-blue-100">Update your list details and manage cards.</p>
+          <p className="text-blue-100 dark:text-blue-200">Update your list details and manage cards.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* List Details Form */}
-        <UICard className="lg:col-span-1 overflow-hidden">
+        <UICard className="lg:col-span-1 overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">List Details</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">List Details</h2>
             <form className="space-y-4">
               <div>
-                <Label htmlFor="name" className="text-sm">Name</Label>
+                <Label htmlFor="name" className="text-sm text-gray-700 dark:text-gray-300">Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter list name"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="description" className="text-sm">Description (Optional)</Label>
+                <Label htmlFor="description" className="text-sm text-gray-700 dark:text-gray-300">Description (Optional)</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Enter list description"
-                  className="mt-1.5"
+                  className="mt-1.5 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   rows={4}
                 />
               </div>
@@ -337,23 +337,23 @@ export default function EditListPage() {
                     });
                   }}
                 />
-                <Label htmlFor="public" className="text-sm font-normal">
+                <Label htmlFor="public" className="text-sm font-normal text-gray-700 dark:text-gray-300">
                   Make this list public
                 </Label>
               </div>
               <div className="pt-2">
-                <Alert variant={formData.isPublic ? "default" : "default"} className="bg-gray-50/50">
+                <Alert variant={formData.isPublic ? "default" : "default"} className="bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
                   {formData.isPublic ? (
                     <>
-                      <Globe className="h-4 w-4" />
-                      <AlertDescription>
+                      <Globe className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <AlertDescription className="text-gray-600 dark:text-gray-300">
                         This list will be visible to all users. They can view and copy your list.
                       </AlertDescription>
                     </>
                   ) : (
                     <>
-                      <Lock className="h-4 w-4" />
-                      <AlertDescription>
+                      <Lock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <AlertDescription className="text-gray-600 dark:text-gray-300">
                         This list is private and only visible to you.
                       </AlertDescription>
                     </>
@@ -365,10 +365,10 @@ export default function EditListPage() {
         </UICard>
 
         {/* Cards Management */}
-        <UICard className="lg:col-span-2 overflow-hidden">
+        <UICard className="lg:col-span-2 overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Manage Cards</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Manage Cards</h2>
               {selectedCards.length > 0 && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -377,19 +377,19 @@ export default function EditListPage() {
                       Remove {selectedCards.length} {selectedCards.length === 1 ? 'Card' : 'Cards'}
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Remove Cards from List</AlertDialogTitle>
-                      <AlertDialogDescription>
+                      <AlertDialogTitle className="text-gray-900 dark:text-white">Remove Cards from List</AlertDialogTitle>
+                      <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
                         Are you sure you want to remove {selectedCards.length} {selectedCards.length === 1 ? 'card' : 'cards'} from this list? 
                         The cards will remain in your collection but won't be part of this list anymore.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleRemoveCards}
-                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                        className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white"
                       >
                         Remove {selectedCards.length} {selectedCards.length === 1 ? 'Card' : 'Cards'}
                       </AlertDialogAction>
@@ -400,12 +400,12 @@ export default function EditListPage() {
             </div>
 
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search cards..."
-                className="pl-9"
+                className="pl-9 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
 
@@ -414,8 +414,8 @@ export default function EditListPage() {
               <div className="space-y-2">
                 {filteredCards?.length === 0 ? (
                   <div className="text-center py-8">
-                    <Search className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No cards found</p>
+                    <Search className="w-8 h-8 text-gray-200 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No cards found</p>
                   </div>
                 ) : (
                   <>
@@ -425,8 +425,8 @@ export default function EditListPage() {
                         className={cn(
                           "flex items-start gap-3 p-4 rounded-lg transition-colors",
                           selectedCards.includes(card.id)
-                            ? "bg-blue-50 border border-blue-200"
-                            : "hover:bg-gray-50 border border-gray-100"
+                            ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-700"
                         )}
                       >
                         <input
@@ -439,32 +439,33 @@ export default function EditListPage() {
                               setSelectedCards(selectedCards.filter(id => id !== card.id));
                             }
                           }}
-                          className="mt-1"
+                          className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-700"
                         />
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="font-medium text-gray-900">{card.word}</p>
-                              <p className="text-sm text-gray-600 line-clamp-2 mt-1">{card.definition}</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{card.word}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mt-1">{card.definition}</p>
                             </div>
                             <Badge 
                               variant={card.reviewStatus === 'COMPLETED' ? 'success' : 'default'}
                               className={cn(
                                 "capitalize whitespace-nowrap",
-                                card.reviewStatus === 'ACTIVE' && "bg-blue-100 text-blue-800",
-                                card.reviewStatus === 'PAUSED' && "bg-gray-100 text-gray-800"
+                                card.reviewStatus === 'ACTIVE' && "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200",
+                                card.reviewStatus === 'PAUSED' && "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
+                                card.reviewStatus === 'COMPLETED' && "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200"
                               )}
                             >
                               {card.reviewStatus.toLowerCase()}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                             <div className="flex items-center gap-1">
-                              <CheckCircle className="w-4 h-4 text-emerald-500" />
+                              <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                               <span>{card.successCount}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <XCircle className="w-4 h-4 text-red-500" />
+                              <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                               <span>{card.failureCount}</span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -484,7 +485,7 @@ export default function EditListPage() {
                           size="sm"
                           disabled={currentPage === 1}
                           onClick={() => setCurrentPage(currentPage - 1)}
-                          className="border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                          className="border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 text-gray-700 dark:text-gray-300"
                         >
                           Previous
                         </Button>
@@ -498,8 +499,8 @@ export default function EditListPage() {
                               className={cn(
                                 "min-w-[2.5rem]",
                                 pageNum === currentPage 
-                                  ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                                  : "border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                  ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white" 
+                                  : "border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 text-gray-700 dark:text-gray-300"
                               )}
                             >
                               {pageNum}
@@ -511,7 +512,7 @@ export default function EditListPage() {
                           size="sm"
                           disabled={currentPage === totalPages}
                           onClick={() => setCurrentPage(currentPage + 1)}
-                          className="border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                          className="border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 text-gray-700 dark:text-gray-300"
                         >
                           Next
                         </Button>

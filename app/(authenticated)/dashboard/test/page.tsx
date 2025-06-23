@@ -89,6 +89,9 @@ export default function TestPage() {
   
   // Test session management
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  
+  // Ref to track if we've initialized words to prevent infinite loops
+  const hasInitializedWords = useRef(false);
 
   // For scroll hint
   const wordRef = useRef<HTMLHeadingElement>(null);
@@ -137,10 +140,13 @@ export default function TestPage() {
 
   // Update question amount when allWords changes
   useEffect(() => {
-    if (allWords.length > 0) {
+    if (allWords.length > 0 && !hasInitializedWords.current) {
       const validWords = allWords.filter(w => w.word && w.word.trim() !== '' && w.definition && w.definition.trim() !== '');
-      setQuestionAmount(Math.min(10, validWords.length));
+      const newQuestionAmount = Math.min(10, validWords.length);
+      
+      setQuestionAmount(newQuestionAmount);
       setWords(validWords);
+      hasInitializedWords.current = true;
     }
   }, [allWords]);
 
@@ -199,9 +205,7 @@ export default function TestPage() {
     onSuccess: () => {
       // Invalidate test history cache
       queryClient.invalidateQueries({ queryKey: ["test-history"] });
-      toast.success('Test completed successfully!');
-      // Stay on the results page, do not navigate
-      // router.push("/dashboard/test/history");
+      // Don't show success toast for individual questions - only show when test is complete
     },
     onError: (error) => {
       console.error('Error saving test session:', error);
@@ -215,8 +219,15 @@ export default function TestPage() {
 
     const timeSpent = Date.now() - startTime;
     const isCorrect = selectedAnswer === words[currentWordIndex].definition;
+    const currentWord = words[currentWordIndex];
+    if (!currentWord?.id) {
+      console.error('Current word or ID is missing:', currentWord);
+      toast.error('Error: Word data is missing');
+      return;
+    }
+
     const result = {
-      cardId: words[currentWordIndex].id,
+      cardId: currentWord.id,
       isCorrect,
       timeSpent,
     };
@@ -233,6 +244,8 @@ export default function TestPage() {
       
       // Submit the individual result immediately
       if (currentSessionId) {
+        console.log('Submitting result:', result);
+        console.log('Session ID:', currentSessionId);
         await submitTestSessionResults.mutateAsync({
           sessionId: currentSessionId,
           result
@@ -253,6 +266,8 @@ export default function TestPage() {
         } else {
           // Test is complete, show results
           setShowResults(true);
+          setShowConfetti(true);
+          toast.success('🎉 Test completed successfully!');
         }
       }, 1500);
 
@@ -271,6 +286,7 @@ export default function TestPage() {
     setCurrentSessionId(null);
     setFlashcardResults([]);
     setShowFlashcardSummary(false);
+    hasInitializedWords.current = false; // Reset initialization flag
   };
 
   const formatTime = (ms: number) => {
@@ -424,8 +440,10 @@ export default function TestPage() {
           .sort(() => Math.random() - 0.5)
           .slice(0, Math.min(questionAmount, allWords.length));
       } else {
-        // For flashcards, use all available words
-        selectedWords = [...allWords];
+        // For flashcards, also respect the questionAmount setting
+        selectedWords = [...allWords]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, Math.min(questionAmount, allWords.length));
       }
       
       if (selectedWords.length === 0) {
@@ -438,27 +456,39 @@ export default function TestPage() {
       const mode = studyMode === "multiple-choice" ? "definition" : "word";
       
       console.log('Creating test session with:', { cardIds, mode });
+      console.log('Selected words:', selectedWords);
+      
       const sessionResponse = await createTestSession.mutateAsync({
         cardIds,
         mode
       });
+      
       console.log('Session response:', sessionResponse);
+      console.log('Session response type:', typeof sessionResponse);
+      console.log('Session response keys:', Object.keys(sessionResponse || {}));
 
       if (!sessionResponse) {
+        console.error('No response received from server');
         throw new Error('No response received from server');
       }
 
       console.log('Session ID from response:', sessionResponse.sessionId);
+      console.log('Session ID type:', typeof sessionResponse.sessionId);
       
       if (!sessionResponse.sessionId) {
+        console.error('No session ID received from server. Response:', sessionResponse);
         throw new Error('No session ID received from server');
       }
 
       // Store the session ID - response is already unwrapped
+      console.log('Setting session ID:', sessionResponse.sessionId);
       setCurrentSessionId(sessionResponse.sessionId);
 
+      console.log('Setting words and starting test...');
       setWords(selectedWords);
+      console.log('About to set isTestStarted to true');
       setIsTestStarted(true);
+      console.log('isTestStarted set to true');
       setCurrentWordIndex(0);
       setTestResults([]);
       setStartTime(Date.now());
@@ -468,10 +498,15 @@ export default function TestPage() {
       setIsFlipped(false);
       
       if (studyMode === "multiple-choice" && selectedWords.length > 0) {
+        console.log('Generating options for first word...');
         generateOptions(selectedWords[0].definition, allWords);
       }
+      
+      console.log('Test start completed. isTestStarted should be true');
+      
     } catch (error) {
       console.error('Error starting test:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       toast.error('Failed to start test. Please try again.');
     }
   };
@@ -483,7 +518,7 @@ export default function TestPage() {
 
   if (showResults) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6 bg-white dark:bg-gray-900 min-h-screen p-4 sm:p-6">
         {showConfetti && (
           <Confetti
             width={windowSize.width}
@@ -493,18 +528,18 @@ export default function TestPage() {
             gravity={0.2}
           />
         )}
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 mb-6 overflow-hidden">
+        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 mb-6 overflow-hidden border-0 shadow-xl">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">Test Results</h1>
-                <p className="text-blue-100 mt-2">
+                <p className="text-blue-100 dark:text-blue-200 mt-2">
                   Great job! Here's how you performed:
                 </p>
               </div>
               <Button 
-                onClick={resetTest}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto"
+                onClick={() => window.location.reload()}
+                className="bg-white/10 dark:bg-white/15 border-white/20 text-white hover:bg-white/20 dark:hover:bg-white/25 w-full sm:w-auto backdrop-blur-sm"
               >
                 <Shuffle className="h-4 w-4 mr-2" />
                 Start New Test
@@ -514,29 +549,29 @@ export default function TestPage() {
         </Card>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden border-none shadow-sm bg-white dark:bg-gray-800">
             <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Questions</p>
-                  <p className="text-2xl font-semibold">{testResults.length}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Questions</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{testResults.length}</p>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden border-none shadow-sm bg-white dark:bg-gray-800">
             <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Correct Answers</p>
-                  <p className="text-2xl font-semibold text-green-600">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Correct Answers</p>
+                  <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
                     {testResults.filter(r => r.isCorrect).length}
                   </p>
                 </div>
@@ -544,15 +579,15 @@ export default function TestPage() {
             </div>
           </Card>
 
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden border-none shadow-sm bg-white dark:bg-gray-800">
             <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                  <XCircle className="h-5 w-5 text-red-600" />
+                <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Incorrect Answers</p>
-                  <p className="text-2xl font-semibold text-red-600">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Incorrect Answers</p>
+                  <p className="text-2xl font-semibold text-red-600 dark:text-red-400">
                     {testResults.filter(r => !r.isCorrect).length}
                   </p>
                 </div>
@@ -560,15 +595,15 @@ export default function TestPage() {
             </div>
           </Card>
 
-          <Card className="overflow-hidden border-none shadow-sm">
+          <Card className="overflow-hidden border-none shadow-sm bg-white dark:bg-gray-800">
             <div className="p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-blue-600" />
+                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Avg. Time</p>
-                  <p className="text-2xl font-semibold">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Time</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                     {formatTime(testResults.reduce((acc, curr) => acc + curr.timeSpent, 0) / testResults.length)}
                   </p>
                 </div>
@@ -577,18 +612,18 @@ export default function TestPage() {
           </Card>
         </div>
 
-        <Card className="overflow-hidden border-none shadow-sm">
+        <Card className="overflow-hidden border-none shadow-sm bg-white dark:bg-gray-800">
           <div className="p-4 sm:p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-lg font-medium text-gray-900">Detailed Results</h2>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Detailed Results</h2>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className="text-gray-600">Correct</span>
+                  <div className="w-2 h-2 rounded-full bg-green-500 dark:bg-green-400"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Correct</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  <span className="text-gray-600">Incorrect</span>
+                  <div className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400"></div>
+                  <span className="text-gray-600 dark:text-gray-400">Incorrect</span>
                 </div>
               </div>
             </div>
@@ -602,32 +637,32 @@ export default function TestPage() {
                     className={cn(
                       "p-4 rounded-lg border transition-colors",
                       result.isCorrect 
-                        ? "bg-green-50/50 border-green-100" 
-                        : "bg-red-50/50 border-red-100"
+                        ? "bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-800" 
+                        : "bg-red-50/50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
                     )}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
                         <div className="flex flex-wrap items-center gap-3">
-                          <p className="font-medium text-gray-900">{word.word}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{word.word}</p>
                           {word.wordList && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                               {word.wordList.name}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           Correct definition: {word.definition}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {formatTime(result.timeSpent)}
                         </p>
                         {result.isCorrect ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
                         ) : (
-                          <XCircle className="h-5 w-5 text-red-500" />
+                          <XCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
                         )}
                       </div>
                     </div>
@@ -1198,154 +1233,135 @@ export default function TestPage() {
     );
   }
 
+  // Multiple Choice Test UI
+  if (!words.length || !words[currentWordIndex]) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[220px]">
+        <p className="text-gray-500 text-lg">No words available for testing.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header Card */}
-        <Card className="relative overflow-hidden bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-gray-800/80 dark:to-blue-900/30 backdrop-blur-xl border-0 shadow-2xl rounded-3xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-purple-500/10 dark:from-blue-600/20 dark:via-indigo-600/10 dark:to-purple-600/20" />
-          <div className="relative p-6 sm:p-8 lg:p-10">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-              {/* Left side - Title and description */}
-              <div className="space-y-4 flex-1">
-                <div className="flex items-center gap-4">
-                  <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-2xl shadow-lg">
-                    <GraduationCap className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                      Test Your Knowledge
-                    </h1>
-                    <p className="text-slate-600 dark:text-slate-400 text-lg mt-1">
-                      Challenge yourself with interactive vocabulary tests
-                    </p>
-                  </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30 p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 mb-6 overflow-hidden border-0 shadow-xl">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">Multiple Choice Test</h1>
+                <p className="text-blue-100 dark:text-blue-200 mt-2">
+                  Question {currentWordIndex + 1} of {words.length}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-white flex items-center bg-white/10 dark:bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span className="font-medium">{formatTime(elapsedTime)}</span>
                 </div>
-              </div>
-
-              {/* Right side - Quick stats */}
-              <div className="flex flex-col sm:flex-row lg:flex-col gap-4 lg:gap-3">
-                <div className="flex items-center gap-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-gray-700/20">
-                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Available Words</p>
-                    <p className="font-bold text-slate-900 dark:text-slate-100 text-lg">{allWords?.length || 0}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Configuration Card */}
-        <Card className="p-6 sm:p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Test Configuration</h2>
-              <p className="text-slate-600 dark:text-slate-400">Customize your test experience</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-              {/* Test Mode Selection */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  Test Mode
-                </Label>
-                <Select value={testMode} onValueChange={(value: TestMode) => setTestMode(value)}>
-                  <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
-                    <SelectItem value="all" className="text-slate-900 dark:text-slate-100">All Words ({allWords?.length || 0})</SelectItem>
-                    <SelectItem value="today" className="text-slate-900 dark:text-slate-100">Today's Words ({todayWords?.length || 0})</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Study Mode Selection */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  Study Mode
-                </Label>
-                <Select value={studyMode} onValueChange={(value: StudyMode) => setStudyMode(value)}>
-                  <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700">
-                    <SelectItem 
-                      value="multiple-choice" 
-                      disabled={!hasEnoughWordsForMultipleChoice}
-                      className="text-slate-900 dark:text-slate-100"
-                    >
-                      Multiple Choice {!hasEnoughWordsForMultipleChoice && "(Need 4+ words)"}
-                    </SelectItem>
-                    <SelectItem value="flashcards" className="text-slate-900 dark:text-slate-100">Flashcards</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Question Amount */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <Shuffle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  Questions ({questionAmount})
-                </Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max={allWords?.length || 1}
-                  value={questionAmount}
-                  onChange={handleQuestionAmountChange}
-                  className="h-12 bg-white/80 dark:bg-gray-800/80 border-slate-200 dark:border-gray-700 text-slate-900 dark:text-slate-100"
-                />
-              </div>
-            </div>
-
-            {/* Warning Messages */}
-            {!hasWords && (
-              <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertDescription className="text-amber-800 dark:text-amber-300">
-                  No words available for testing. Please add some vocabulary cards first.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {!hasEnoughWordsForMultipleChoice && studyMode === "multiple-choice" && (
-              <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
-                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <AlertDescription className="text-blue-800 dark:text-blue-300">
-                  Multiple choice mode requires at least 4 words. Switching to flashcards mode or add more words.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Start Test Button */}
-            {hasWords && (
-              <div className="flex justify-center pt-4">
-                <Button
-                  onClick={startTest}
-                  disabled={createTestSession.isPending || !hasWords}
-                  className="px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 hover:from-blue-700 hover:to-indigo-700 dark:hover:from-blue-800 dark:hover:to-indigo-800 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                <Button 
+                  variant="ghost"
+                  className="bg-white/10 dark:bg-white/15 border-white/20 text-white hover:bg-white/20 dark:hover:bg-white/25 backdrop-blur-sm"
+                  onClick={handleExit}
                 >
-                  {createTestSession.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Starting Test...
-                    </div>
-                  ) : (
-                    <>
-                      <GraduationCap className="w-6 h-6 mr-2" />
-                      Start Test ({questionAmount} questions)
-                    </>
-                  )}
+                  Exit
                 </Button>
               </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Question Card */}
+        <Card className="p-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-0 shadow-xl">
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                What does "<span className="text-blue-600 dark:text-blue-400">{words[currentWordIndex]?.word}</span>" mean?
+              </h2>
+              {words[currentWordIndex]?.wordList && (
+                <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-sm rounded-full border border-blue-200 dark:border-blue-700">
+                  {words[currentWordIndex].wordList.name}
+                </span>
+              )}
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3">
+              {options.map((option, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className={cn(
+                    "w-full p-4 text-left justify-start h-auto min-h-[60px] transition-all duration-200",
+                    "bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600",
+                    "hover:bg-gray-50 dark:hover:bg-gray-600/50 text-gray-900 dark:text-gray-100",
+                    "disabled:opacity-100",
+                    showFeedback && option === words[currentWordIndex]?.definition && 
+                      "bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white border-green-500 dark:border-green-600",
+                    showFeedback && option === lastAnswer?.selected && !lastAnswer?.isCorrect && 
+                      "bg-red-500 dark:bg-red-600 hover:bg-red-600 dark:hover:bg-red-700 text-white border-red-500 dark:border-red-600"
+                  )}
+                  onClick={() => handleResponse(option)}
+                  disabled={showFeedback}
+                >
+                  <span className="text-wrap break-words font-medium">{option}</span>
+                </Button>
+              ))}
+            </div>
+
+            {/* Feedback */}
+            {showFeedback && lastAnswer && (
+              <div className={cn(
+                "p-4 rounded-lg border backdrop-blur-sm",
+                lastAnswer.isCorrect 
+                  ? "bg-green-50/80 dark:bg-green-900/20 border-green-200 dark:border-green-800" 
+                  : "bg-red-50/80 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+              )}>
+                <div className="flex items-center gap-2">
+                  {lastAnswer.isCorrect ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  )}
+                  <span className={cn(
+                    "font-medium",
+                    lastAnswer.isCorrect 
+                      ? "text-green-800 dark:text-green-300" 
+                      : "text-red-800 dark:text-red-300"
+                  )}>
+                    {lastAnswer.isCorrect ? "Correct!" : "Incorrect"}
+                  </span>
+                </div>
+                {!lastAnswer.isCorrect && (
+                  <p className="text-gray-600 dark:text-gray-400 mt-2">
+                    The correct answer is: <strong className="text-gray-900 dark:text-gray-200">{lastAnswer.correct}</strong>
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </Card>
+
+        {/* Exit Dialog */}
+        <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+          <DialogContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900 dark:text-gray-100">Exit Test?</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                Are you sure you want to exit? Your progress will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExitDialog(false)}>
+                Continue Test
+              </Button>
+              <Button variant="destructive" onClick={confirmExit}>
+                Exit Test
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

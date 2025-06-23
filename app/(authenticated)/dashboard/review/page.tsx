@@ -5,19 +5,35 @@ export const dynamic = 'force-dynamic';
 import { Button } from "@/components/ui/button";
 import { Card as CardUI } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTodayCards } from "@/hooks/useCards";
-import { CheckCircle2, BookOpen, Brain, Target, Zap } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { useTodayCards, useCards } from "@/hooks/useCards";
+import { CheckCircle2, BookOpen, Brain, Target, Zap, Settings } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function ReviewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { data: todayCards, isLoading } = useTodayCards();
   const [selectedMode, setSelectedMode] = useState<'multiple-choice' | 'flashcard' | null>(null);
   const [startingNewSession, setStartingNewSession] = useState(false);
   const [repeatSessionProgress, setRepeatSessionProgress] = useState(0);
   const [_, forceUpdate] = useState(0);
+  const [selectedCardCount, setSelectedCardCount] = useState<number>(0);
+
+  // Fetch card stats to get reviewedToday count
+  const { getCardStats } = useCards();
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ["stats"],
+    queryFn: () => getCardStats()
+  });
+
+  // Refetch stats when returning to this page (e.g., after completing a review session)
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["stats"] });
+  }, [queryClient]);
 
   // Calculate completed cards from the database reviews
   let cardsArray: any[] = [];
@@ -27,17 +43,31 @@ export default function ReviewPage() {
     cardsArray = (todayCards as any).cards;
   }
   const hasCards = cardsArray.length > 0;
-  const total = hasCards ? cardsArray.length : 0;
-  const completedCount = 0; // No reviewedTodayTotal, so default to 0
-  const remainingCount = total - completedCount;
-  const isCompleted = false; // Always false to allow multiple reviews
-  const hasEnoughCardsForMultipleChoice = total >= 4;
+  const remainingCards = hasCards ? cardsArray.length : 0;
+  const completedCount = stats?.reviewedToday || 0;
+  
+  // Use original daily total (completed + remaining) for progress calculation
+  const originalDailyTotal = completedCount + remainingCards;
+  const total = originalDailyTotal; // Use original total for progress bar
+  
+  const remainingCount = remainingCards;
+  const isCompleted = completedCount >= originalDailyTotal && originalDailyTotal > 0;
+  const hasEnoughCardsForMultipleChoice = remainingCards >= 4; // Use remaining for multiple choice check
+
+  // Initialize selectedCardCount when cards are loaded
+  if (selectedCardCount === 0 && remainingCards > 0) {
+    const defaultCount = Math.min(remainingCards, 10);
+    // If we have enough cards for multiple choice, ensure we start with at least 4
+    setSelectedCardCount(hasEnoughCardsForMultipleChoice ? Math.max(defaultCount, 4) : defaultCount);
+  }
 
   // Debug logging
   console.log('todayCards:', todayCards);
   console.log('cardsArray:', cardsArray);
   console.log('hasCards:', hasCards);
   console.log('total:', total);
+  console.log('completedCount:', completedCount);
+  console.log('stats:', stats);
 
   function getRepeatMode() {
     if (typeof window !== 'undefined') {
@@ -48,11 +78,12 @@ export default function ReviewPage() {
   const repeatMode = getRepeatMode();
 
   const handleStartSession = (mode: 'multiple-choice' | 'flashcard') => {
+    const cardCount = selectedCardCount;
     if ((completedCount === total && total > 0) || repeatMode) {
       setRepeatSessionProgress(0);
-      router.push(`/dashboard/review/session?mode=${mode}&repeat=true`);
+      router.push(`/dashboard/review/session?mode=${mode}&repeat=true&count=${cardCount}`);
     } else {
-      router.push(`/dashboard/review/session?mode=${mode}`);
+      router.push(`/dashboard/review/session?mode=${mode}&count=${cardCount}`);
     }
   };
 
@@ -76,9 +107,12 @@ export default function ReviewPage() {
     return null;
   }
 
+  // Update loading to include stats loading
+  const isLoadingData = isLoading || isLoadingStats;
+
   return (
     <div className="min-h-screen  dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-      <div className="max-w-6xl  space-y-8">
+      <div className="space-y-8">
         {/* Header Section */}
         <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 dark:from-blue-900 dark:via-indigo-900 dark:to-purple-900 rounded-3xl p-8 shadow-2xl">
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
@@ -98,7 +132,7 @@ export default function ReviewPage() {
         </div>
 
         {/* Progress Section */}
-        {isLoading ? (
+        {isLoadingData ? (
           <CardUI className="p-8 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
             <div className="space-y-6">
               <Skeleton className="h-8 w-64" />
@@ -142,7 +176,7 @@ export default function ReviewPage() {
                           ? 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500'
                           : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500'
                       }`}
-                      style={{ width: `${(completedCount / total) * 100}%` }}
+                      style={{ width: `${total > 0 ? (completedCount / total) * 100 : 0}%` }}
                     />
                   </div>
                   <div className="flex justify-between items-center">
@@ -154,7 +188,7 @@ export default function ReviewPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                        {((completedCount / total) * 100).toFixed(0)}%
+                        {total > 0 ? ((completedCount / total) * 100).toFixed(0) : 0}%
                       </span>
                     </div>
                   </div>
@@ -219,8 +253,87 @@ export default function ReviewPage() {
           </CardUI>
         ) : null}
 
+        {/* Card Selection Section */}
+        {hasCards && !isLoadingData && (
+          <CardUI className="p-8 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <Settings className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Session Settings</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                    Cards to Review
+                  </label>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                      {selectedCardCount}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">of {remainingCards}</span>
+                  </div>
+                </div>
+                
+                <div className="px-3">
+                  <Slider
+                    value={[selectedCardCount]}
+                    onValueChange={(value) => setSelectedCardCount(value[0])}
+                    max={remainingCards}
+                    min={hasEnoughCardsForMultipleChoice ? 4 : 1}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span>{hasEnoughCardsForMultipleChoice ? '4 cards' : '1 card'}</span>
+                    <span>{remainingCards} cards</span>
+                  </div>
+                  {hasEnoughCardsForMultipleChoice && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      Multiple choice requires at least 4 cards
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {[5, 10, 15, 20]
+                    .filter(num => num <= remainingCards)
+                    .filter(num => !hasEnoughCardsForMultipleChoice || num >= 4)
+                    .map((num) => (
+                    <Button
+                      key={num}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedCardCount(num)}
+                      className={`${
+                        selectedCardCount === num
+                          ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300'
+                          : 'hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                      }`}
+                    >
+                      {num}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedCardCount(remainingCards)}
+                    className={`${
+                      selectedCardCount === remainingCards
+                        ? 'bg-purple-100 border-purple-300 text-purple-700 dark:bg-purple-900/30 dark:border-purple-600 dark:text-purple-300'
+                        : 'hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                    }`}
+                  >
+                    All ({remainingCards})
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardUI>
+        )}
+
         {/* No cards info message */}
-        {(!hasCards && !isLoading) && (
+        {(!hasCards && !isLoadingData) && (
           <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-3xl border border-blue-200 dark:border-blue-800 shadow-xl">
             <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-full mb-4">
               <BookOpen className="w-12 h-12 text-blue-600 dark:text-blue-400" />
@@ -237,11 +350,11 @@ export default function ReviewPage() {
           {/* Multiple Choice Card */}
           <CardUI 
             className={`group relative overflow-hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl transition-all duration-500 ${
-              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice 
+              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession || !hasEnoughCardsForMultipleChoice || selectedCardCount < 4
                 ? 'opacity-50 cursor-not-allowed' 
                 : 'cursor-pointer hover:shadow-2xl hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-slate-800/80'
             }`}
-            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && hasEnoughCardsForMultipleChoice && handleStartSession('multiple-choice')}
+            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoadingData && !startingNewSession && hasEnoughCardsForMultipleChoice && selectedCardCount >= 4 && handleStartSession('multiple-choice')}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="relative p-8 space-y-6">
@@ -266,16 +379,17 @@ export default function ReviewPage() {
               <div className="pt-4">
                 <Button 
                   className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
-                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice
+                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession || !hasEnoughCardsForMultipleChoice || selectedCardCount < 4
                       ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl'
                   }`}
-                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession || !hasEnoughCardsForMultipleChoice}
+                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession || !hasEnoughCardsForMultipleChoice || selectedCardCount < 4}
                 >
                   {!hasCards ? 'No Cards Available' : 
                    !hasEnoughCardsForMultipleChoice ? 'Need 4+ Cards' : 
+                   selectedCardCount < 4 ? 'Select 4+ Cards' :
                    ((completedCount === total && total > 0) && !repeatMode) ? 'Session Completed' : 
-                   'Start Quiz'}
+                   `Start Quiz (${selectedCardCount} cards)`}
                 </Button>
               </div>
             </div>
@@ -284,11 +398,11 @@ export default function ReviewPage() {
           {/* Flashcards Card */}
           <CardUI 
             className={`group relative overflow-hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl border-0 shadow-xl rounded-3xl transition-all duration-500 ${
-              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession 
+              !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession 
                 ? 'opacity-50 cursor-not-allowed' 
                 : 'cursor-pointer hover:shadow-2xl hover:scale-[1.02] hover:bg-white/80 dark:hover:bg-slate-800/80'
             }`}
-            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoading && !startingNewSession && handleStartSession('flashcard')}
+            onClick={() => hasCards && (!((completedCount === total && total > 0) && !repeatMode)) && !isLoadingData && !startingNewSession && handleStartSession('flashcard')}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="relative p-8 space-y-6">
@@ -313,15 +427,15 @@ export default function ReviewPage() {
               <div className="pt-4">
                 <Button 
                   className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 ${
-                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession
+                    !hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession
                       ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed'
                       : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg hover:shadow-xl'
                   }`}
-                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoading || startingNewSession}
+                  disabled={!hasCards || ((completedCount === total && total > 0) && !repeatMode) || isLoadingData || startingNewSession}
                 >
                   {!hasCards ? 'No Cards Available' : 
                    ((completedCount === total && total > 0) && !repeatMode) ? 'Session Completed' : 
-                   'Start Flashcards'}
+                   `Start Flashcards (${selectedCardCount} cards)`}
                 </Button>
               </div>
             </div>

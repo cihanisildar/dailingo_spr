@@ -301,89 +301,87 @@ export default function CardDetailsPage() {
             </Card>
 
             {/* Word Details Cards */}
-            {card.wordDetails && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Synonyms Card */}
-                <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-blue-500 dark:bg-blue-400 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">S</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Synonyms</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Synonyms Card */}
+              <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-blue-500 dark:bg-blue-400 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">S</span>
                   </div>
-                  {card.wordDetails.synonyms && card.wordDetails.synonyms.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {card.wordDetails.synonyms.map((synonym, index) => (
-                        <Badge key={index} variant="outline" className="border-blue-300 dark:border-blue-600 text-blue-800 dark:text-blue-200 bg-white dark:bg-blue-900/30">
-                          {synonym}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-blue-600 dark:text-blue-300 text-sm italic">No synonyms added yet</p>
-                  )}
-                </Card>
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Synonyms</h3>
+                </div>
+                {card.wordDetails?.synonyms && card.wordDetails.synonyms.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {card.wordDetails.synonyms.map((synonym, index) => (
+                      <Badge key={index} variant="outline" className="border-blue-300 dark:border-blue-600 text-blue-800 dark:text-blue-200 bg-white dark:bg-blue-900/30">
+                        {synonym}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-blue-600 dark:text-blue-300 text-sm italic">No synonyms added yet</p>
+                )}
+              </Card>
 
-                {/* Antonyms Card */}
-                <Card className="p-6 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-red-500 dark:bg-red-400 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">A</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">Antonyms</h3>
+              {/* Antonyms Card */}
+              <Card className="p-6 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-red-500 dark:bg-red-400 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">A</span>
                   </div>
-                  {card.wordDetails.antonyms && card.wordDetails.antonyms.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {card.wordDetails.antonyms.map((antonym, index) => (
-                        <Badge key={index} variant="outline" className="border-red-300 dark:border-red-600 text-red-800 dark:text-red-200 bg-white dark:bg-red-900/30">
-                          {antonym}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-red-600 dark:text-red-300 text-sm italic">No antonyms added yet</p>
-                  )}
-                </Card>
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-100">Antonyms</h3>
+                </div>
+                {card.wordDetails?.antonyms && card.wordDetails.antonyms.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {card.wordDetails.antonyms.map((antonym, index) => (
+                      <Badge key={index} variant="outline" className="border-red-300 dark:border-red-600 text-red-800 dark:text-red-200 bg-white dark:bg-red-900/30">
+                        {antonym}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-red-600 dark:text-red-300 text-sm italic">No antonyms added yet</p>
+                )}
+              </Card>
 
-                {/* Examples Card */}
-                <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700 md:col-span-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-green-500 dark:bg-green-400 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">E</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">Examples</h3>
+              {/* Examples Card */}
+              <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700 md:col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-green-500 dark:bg-green-400 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">E</span>
                   </div>
-                  {card.wordDetails.examples && card.wordDetails.examples.length > 0 ? (
-                    <div className="space-y-3">
-                      {card.wordDetails.examples.map((example, index) => (
-                        <blockquote key={index} className="border-l-4 border-green-500 dark:border-green-400 pl-4 italic text-green-800 dark:text-green-200 bg-white dark:bg-green-900/20 p-3 rounded-r-lg">
-                          "{example}"
-                        </blockquote>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-green-600 dark:text-green-300 text-sm italic">No examples added yet</p>
-                  )}
-                </Card>
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">Examples</h3>
+                </div>
+                {card.wordDetails?.examples && card.wordDetails.examples.length > 0 ? (
+                  <div className="space-y-3">
+                    {card.wordDetails.examples.map((example, index) => (
+                      <blockquote key={index} className="border-l-4 border-green-500 dark:border-green-400 pl-4 italic text-green-800 dark:text-green-200 bg-white dark:bg-green-900/20 p-3 rounded-r-lg">
+                        "{example}"
+                      </blockquote>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-green-600 dark:text-green-300 text-sm italic">No examples added yet</p>
+                )}
+              </Card>
 
-                {/* Notes Card */}
-                <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700 md:col-span-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-purple-500 dark:bg-purple-400 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-sm font-semibold">N</span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Notes</h3>
+              {/* Notes Card */}
+              <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700 md:col-span-2">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-purple-500 dark:bg-purple-400 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-sm font-semibold">N</span>
                   </div>
-                  {card.wordDetails.notes ? (
-                    <div className="bg-white dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-600">
-                      <p className="text-purple-800 dark:text-purple-200 leading-relaxed">{card.wordDetails.notes}</p>
-                    </div>
-                  ) : (
-                    <p className="text-purple-600 dark:text-purple-300 text-sm italic">No notes added yet</p>
-                  )}
-                </Card>
-              </div>
-            )}
+                  <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">Notes</h3>
+                </div>
+                {card.wordDetails?.notes ? (
+                  <div className="bg-white dark:bg-purple-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-600">
+                    <p className="text-purple-800 dark:text-purple-200 leading-relaxed">{card.wordDetails.notes}</p>
+                  </div>
+                ) : (
+                  <p className="text-purple-600 dark:text-purple-300 text-sm italic">No notes added yet</p>
+                )}
+              </Card>
+            </div>
           </div>
 
           {/* Stats Sidebar */}

@@ -32,10 +32,12 @@ export const useTest = () => {
     console.log('useTest startTest called with:', data);
     const response = await api.post<TestSession>('/test-sessions', data);
     console.log('useTest startTest response:', response);
-    return { sessionId: response.id };
+    // Return the session with sessionId field for compatibility
+    return { sessionId: response.id, ...response };
   }, [api]);
 
   const submitTestResults = useCallback(async (sessionId: string, result: TestResult) => {
+    console.log('API payload being sent:', result);
     return api.post<TestSession>(`/test-sessions/${sessionId}/results`, result);
   }, [api]);
 

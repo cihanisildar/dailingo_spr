@@ -51,7 +51,7 @@ const useCalendarData = (selectedDate: Date) => {
 function CalendarSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30">
-      <div className="max-w-7xl space-y-6">
+      <div className="space-y-6">
         <div className="bg-blue-600 dark:bg-blue-800 rounded-3xl p-6 animate-pulse">
           <div className="h-8 w-64 bg-white/20 rounded-lg mb-2" />
           <div className="h-6 w-48 bg-white/20 rounded-lg mb-4" />
@@ -151,7 +151,7 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-blue-900/30">
-      <div className="max-w-7xl space-y-6">
+      <div className="space-y-6">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 rounded-3xl p-6 md:p-8 text-white shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
