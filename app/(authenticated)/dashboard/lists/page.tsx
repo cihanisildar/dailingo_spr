@@ -19,31 +19,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { SearchInput } from "@/components/ui/search-input";
-import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, ArrowUpDown, Filter, ChevronDown, Book, Users, Lock, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+import { useLists } from "@/hooks/useLists";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useLists } from "@/hooks/useLists";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Book,
-  Plus,
-  Search,
-  Sparkles,
-  Users,
-  Lock,
-  Filter,
-  ArrowUpDown,
-  ChevronDown,
-} from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from "react-hot-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function WordListsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -133,9 +122,9 @@ export default function WordListsPage() {
                   {/* Search bar */}
                   <div className="relative flex-1 min-w-0">
                     <Search className="absolute left-3 sm:left-3.5 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4 sm:w-5 sm:h-5 z-10 transition-colors duration-200" />
-                    <SearchInput
+                    <Input
                       value={searchTerm}
-                      onChange={setSearchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search your word lists..."
                       className="w-full h-11 sm:h-12 pl-10 sm:pl-12 pr-4 sm:pr-6 pt-1 bg-white/20 dark:bg-white/10 backdrop-blur-sm text-white placeholder:text-white/70 border border-white/20 dark:border-white/15 rounded-lg sm:rounded-xl focus:bg-white/25 dark:focus:bg-white/15 focus:border-white/40 dark:focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all duration-200 text-sm sm:text-base"
                     />
@@ -502,7 +491,7 @@ function CreateListDialog({ children }: { children: React.ReactNode }) {
             <Textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               placeholder="Describe what this list is for..."
               className="resize-none text-sm sm:text-base"
               rows={3}
@@ -563,7 +552,7 @@ function CreateListDialog({ children }: { children: React.ReactNode }) {
 function WordListsSkeleton() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-purple-900/30">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 space-y-6 sm:space-y-8">
+      <div className=" space-y-6 sm:space-y-8">
         {/* Header Skeleton */}
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-10">
           <div className="space-y-4">

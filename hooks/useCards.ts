@@ -77,6 +77,10 @@ export const useCards = () => {
     return api.delete<{ message: string }>(`/cards/${id}`);
   }, [api]);
 
+  const deleteBulkCards = useCallback(async (cardIds: string[]) => {
+    return api.post<{ success: number; failed: number; errors: string[] }>('/cards/bulk-delete', { cardIds });
+  }, [api]);
+
   const getTodayCards = useCallback(async () => {
     return api.get<Card[]>('/cards/today');
   }, [api]);
@@ -108,6 +112,7 @@ export const useCards = () => {
     createCard,
     updateCard,
     deleteCard,
+    deleteBulkCards,
     getTodayCards,
     getUpcomingCards,
     getCardStats,
@@ -251,6 +256,62 @@ export function useDeleteCard() {
       if (deletedId) {
         queryClient.invalidateQueries({ queryKey: cardKeys.detail(deletedId) });
       }
+    },
+  });
+}
+
+export function useBulkDeleteCards() {
+  const queryClient = useQueryClient();
+  const api = useApi();
+
+  return useMutation({
+    mutationFn: async (cardIds: string[]) => {
+      const result = await api.post<{ success: number; failed: number; errors: string[] }>('/cards/bulk-delete', { cardIds });
+      return { cardIds, result };
+    },
+    onMutate: async (deletedIds) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["cards"] });
+      
+      // Cancel queries for individual cards
+      deletedIds.forEach(id => {
+        queryClient.cancelQueries({ queryKey: cardKeys.detail(id) });
+      });
+
+      // Snapshot the previous value
+      const previousCards = queryClient.getQueryData(["cards"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(["cards"], (old: Card[] | undefined) => {
+        if (!old) return [];
+        return old.filter(card => !deletedIds.includes(card.id));
+      });
+
+      // Remove the individual card queries from cache
+      deletedIds.forEach(id => {
+        queryClient.removeQueries({ queryKey: cardKeys.detail(id) });
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousCards };
+    },
+    onError: (err, deletedIds, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousCards) {
+        queryClient.setQueryData(["cards"], context.previousCards);
+      }
+    },
+    onSettled: (data) => {
+      // Always refetch after error or success to ensure cache consistency
+      queryClient.invalidateQueries({ queryKey: ["cards"] });
+      if (data?.cardIds) {
+        data.cardIds.forEach(id => {
+          queryClient.invalidateQueries({ queryKey: cardKeys.detail(id) });
+        });
+      }
+      // Also invalidate related queries that might be affected
+      queryClient.invalidateQueries({ queryKey: cardKeys.today() });
+      queryClient.invalidateQueries({ queryKey: cardKeys.upcoming(365) });
     },
   });
 }

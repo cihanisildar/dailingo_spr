@@ -30,7 +30,7 @@ Dailingo is a web application that helps users learn and remember words effectiv
 3. Set up your environment variables:
    - Copy `.env.example` to `.env`
    - Fill in the required environment variables:
-     - `DATABASE_URL`: Your PostgreSQL connection string
+     - `NEXT_PUBLIC_API_URL`: Your API server URL (e.g., https://api.repeeker.com)
      - `NEXTAUTH_SECRET`: A random string for session encryption
      - `NEXTAUTH_URL`: Your application URL (http://localhost:3000 for development)
      - `GOOGLE_CLIENT_ID`: Your Google OAuth client ID
@@ -66,6 +66,20 @@ The application uses the following main models:
 - `User`: Stores user information and authentication details
 - `WordList`: Represents a collection of related words
 - `Card`: Stores individual word cards with spaced repetition metadata
+
+## API Configuration
+
+This application makes direct API calls to the backend server. Ensure your backend server (nginx) is configured with proper CORS headers to allow requests from your frontend domain.
+
+### Required nginx CORS configuration:
+```nginx
+add_header 'Access-Control-Allow-Origin' '*';
+add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS';
+add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+```
+
+### Environment Variables:
+- `NEXT_PUBLIC_API_URL`: Set this to your backend API server URL (e.g., https://api.repeeker.com)
 
 ## Contributing
 

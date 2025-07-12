@@ -2,7 +2,6 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { ApiResponse } from '@/types/api';
-import jwt from 'jsonwebtoken';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -11,6 +10,12 @@ interface User {
   email: string;
   name: string;
   image?: string;
+  rp_accessToken: string;
+  rp_refreshToken: string;
+}
+
+interface AuthResponse {
+  user: User;
 }
 
 export const authOptions: NextAuthOptions = {
@@ -33,7 +38,7 @@ export const authOptions: NextAuthOptions = {
         try {
           console.log('[DEBUG] Attempting login with:', { email: credentials.email });
           
-          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -45,7 +50,7 @@ export const authOptions: NextAuthOptions = {
             credentials: 'include'
           });
 
-          const result = await response.json() as ApiResponse<User>;
+          const result = await response.json() as ApiResponse<AuthResponse>;
           console.log('[DEBUG] Login response:', result);
 
           if (result.status === 'error' || !response.ok) {
@@ -54,12 +59,14 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (result.data) {
-            // Return the user object in the format NextAuth expects
+            const user = result.data.user;
             return {
-              id: result.data.id,
-              email: result.data.email,
-              name: result.data.name,
-              image: result.data.image || null,
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              image: user.image || null,
+              accessToken: user.rp_accessToken,
+              refreshToken: user.rp_refreshToken,
             };
           }
           return null;
@@ -81,94 +88,61 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       console.log('[DEBUG] signIn callback triggered', { provider: account?.provider, user, profile });
-
-      // User sync is handled in the JWT callback for proper token management
-
       return true;
     },
     async jwt({ token, user, account }) {
-      console.log('[DEBUG] JWT Callback - Input:', { token, user, account, isFirstSignIn: !!user });
-      
-      // On first login, user is present - this is when we need to map Google ID to internal ID
-      if (user && account) {
-        console.log('[DEBUG] First sign-in detected, processing user mapping...');
-        
-        if (account.provider === 'google') {
-          try {
-            console.log('[DEBUG] Fetching internal user ID for Google user:', user.email, 'with Google ID:', user.id);
-            const response = await fetch('https://repeekerserver-production.up.railway.app/api/auth/sync-google-user', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                id: user.id, // Google's unique user ID
-                email: user.email,
-                name: user.name,
-                image: user.image,
-              }),
-            });
-
-            const result = await response.json();
-            console.log('[DEBUG] Sync response in JWT:', result);
-
-            if (result.status === 'success' && result.data && result.data.user && result.data.user.id) {
-              // Use the internal database ID instead of the Google ID
-              token.id = result.data.user.id;
-              token.email = result.data.user.email || user.email;
-              token.name = result.data.user.name || user.name;
-              token.picture = result.data.user.image || user.image;
-              console.log('[DEBUG] Updated token with internal database user:', {
-                oldId: user.id,
-                newId: token.id,
-                email: token.email
-              });
-            } else {
-              // Fallback to using the Google ID if sync fails
-              console.error('[DEBUG] Sync failed, using Google ID as fallback:', result);
-              token.id = user.id;
-              token.email = user.email;
-              token.name = user.name;
-              token.picture = user.image;
-            }
-          } catch (error) {
-            console.error('[DEBUG] Error getting internal user ID, using Google ID as fallback:', error);
-            token.id = user.id;
-            token.email = user.email;
-            token.name = user.name;
-            token.picture = user.image;
+      console.log('[DEBUG] JWT Callback - Input:', { token, user, account });
+      if (account && account.provider === 'google') {
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/sync-google-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: user?.id,
+              email: user?.email,
+              name: user?.name,
+              image: user?.image,
+            }),
+          });
+          const result = await response.json();
+          console.log('[DEBUG] Google sync result:', result);
+          if (result.status === 'success' && result.data && result.data.user) {
+            const syncedUser = result.data.user;
+            token.id = syncedUser.id;
+            token.email = syncedUser.email;
+            token.name = syncedUser.name;
+            token.picture = syncedUser.image;
+            token.accessToken = result.data.rp_accessToken;
+            token.refreshToken = result.data.rp_refreshToken;
+            console.log('[DEBUG] Token after sync:', token);
+          } else {
+            token.id = user?.id;
+            token.email = user?.email;
+            token.name = user?.name;
+            token.picture = user?.image;
+            console.log('[DEBUG] Google sync failed, fallback token:', token);
           }
-        } else {
-          // For non-Google providers (like credentials), use the user data as-is
-          token.id = user.id;
-          token.email = user.email;
-          token.name = user.name;
-          token.picture = user.image;
+        } catch (error) {
+          token.id = user?.id;
+          token.email = user?.email;
+          token.name = user?.name;
+          token.picture = user?.image;
+          console.log('[DEBUG] Google sync error, fallback token:', token);
+        }
+      } else if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
+        if ((user as any).accessToken) {
+          token.accessToken = (user as any).accessToken;
+          token.refreshToken = (user as any).refreshToken;
         }
       }
-      
-      // Always generate a JWT for accessToken if we have the info
-      if (token.id && token.email) {
-        console.log('[DEBUG] JWT Callback - Generating access token with:', {
-          id: token.id,
-          email: token.email,
-          name: token.name,
-          secret: process.env.NEXTAUTH_SECRET ? 'exists' : 'missing'
-        });
-        
-        token.accessToken = jwt.sign(
-          { id: token.id, email: token.email, name: token.name },
-          process.env.NEXTAUTH_SECRET!,
-          { expiresIn: '30d' }
-        );
-      }
-      
       console.log('[DEBUG] JWT Callback - Output token:', token);
       return token;
     },
     async session({ session, token }) {
-      console.log('[DEBUG] Session Callback - Input:', { session, token });
-      
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -176,8 +150,7 @@ export const authOptions: NextAuthOptions = {
         session.user.image = token.picture as string;
       }
       session.accessToken = token.accessToken as string;
-      
-      console.log('[DEBUG] Session Callback - Output session:', session);
+      session.refreshToken = token.refreshToken as string;
       return session;
     }
   },
